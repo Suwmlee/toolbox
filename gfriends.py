@@ -651,7 +651,7 @@ try:
 			with alive_bar(len(link_dict), enrich_print = False) as bar:
 				for actor_name,link in link_dict.items():
 					try:
-						print(actor_name)
+						# print(actor_name)
 						if '（' in actor_name:
 							# bar(re.sub(r'（.*）','',actor_name))
 							bar()
