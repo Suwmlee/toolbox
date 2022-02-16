@@ -254,8 +254,8 @@ def read_config(config_file):
 				write_txt(local_path+"/README.txt",'本目录自动生成，您可以存放自己收集的头像，这些头像将被优先导入服务器。\n\n请自行备份您收集头像的副本，根据个人配置不同，该目录文件可能会被程序修改。\n\n仅支持JPG格式，且请勿再创建子目录。\n\n如果您收集的头像位于子目录，可通过 Move To Here.bat（Only for Windows） 工具将其全部提取到根目录。')
 				write_txt(local_path+"/Move To Here.bat",'@echo off\necho This tool will help you move all files which in the subdirectory to this root directory\npause\nfor /f "delims=" %%a in ("dir /a-d /b /s ") do (\nmove "%%~a" ./ 2>nul\n)\n')
 			# 定义百度AI
-			if fixsize == '3':
-				BD_AI_client = AipBodyAnalysis(BD_App_ID, BD_API_Key, BD_Secret_Key)
+			# if fixsize == '3':
+			# 	BD_AI_client = AipBodyAnalysis(BD_App_ID, BD_API_Key, BD_Secret_Key)
 			else:
 				BD_AI_client = None
 			Black_List = Black_List.split('、')
@@ -415,7 +415,7 @@ def del_all():
 	print('【调试模式】删除所有头像\n')
 	(list_persons,emby_flag) = read_persons(host_url,api_key,True)
 	rewriteable_word('按任意键开始...'); os.system('pause>nul') if WINOS else input('按任意键开始...')
-	with alive_bar(len(list_persons), theme = 'ascii', enrich_print = False) as bar:
+	with alive_bar(len(list_persons), enrich_print = False) as bar:
 		for dic_each_actor in list_persons:
 			bar(dic_each_actor['Name'])
 			if dic_each_actor['ImageTags']:
@@ -648,10 +648,15 @@ try:
 					print('× 网络连接异常，跳过下载：'+ str(actor_name)+'\n')
 					continue
 		else:
-			with alive_bar(len(link_dict), theme = 'ascii', enrich_print = False) as bar:
+			with alive_bar(len(link_dict), enrich_print = False) as bar:
 				for actor_name,link in link_dict.items():
 					try:
-						bar(re.sub(r'（.*）','',actor_name)) if '（' in actor_name else bar(actor_name)
+						print(actor_name)
+						if '（' in actor_name:
+							# bar(re.sub(r'（.*）','',actor_name))
+							bar()
+						else:
+							bar()
 						proc_md5 = md5((actor_name+'+1').encode('UTF-8')).hexdigest()[13:-13]
 						if not proc_flag or (proc_flag and not proc_md5 in proc_list):
 							download_avatar(link,actor_name,proc_md5) # 记录下载完成的操作放到子线程中，以防没下完中断的断点没记录到
@@ -721,9 +726,10 @@ try:
 					if not result: pic_path_dict.pop(filename)
 				proc_log.write(proc_md5+'\n')
 		else:
-			with alive_bar(len(pic_path_dict), theme = 'ascii', enrich_print = False) as bar:
+			with alive_bar(len(pic_path_dict), enrich_print = False) as bar:
 				for filename,pic_path in pic_path_dict.items():
-					bar(re.sub(r'（.*）','',filename).replace('.jpg','')) if '（' in filename else bar(filename.replace('.jpg',''))
+					# bar(re.sub(r'（.*）','',filename).replace('.jpg','')) if '（' in filename else bar(filename.replace('.jpg',''))
+					bar()
 					proc_md5 = md5((filename+'+2').encode('UTF-8')).hexdigest()[13:-13]
 					if not proc_flag or (proc_flag and not proc_md5 in proc_list):
 						result = fix_size(fixsize,pic_path)
@@ -751,9 +757,10 @@ try:
 					break
 			num_suc += 1
 	else:
-		with alive_bar(len(pic_path_dict), theme = 'ascii', enrich_print = False) as bar:
+		with alive_bar(len(pic_path_dict), enrich_print = False) as bar:
 			for filename,pic_path in pic_path_dict.items():
-				bar(re.sub(r'（.*）','',filename).replace('.jpg','')) if '（' in filename else bar(filename.replace('.jpg',''))
+				# bar(re.sub(r'（.*）','',filename).replace('.jpg','')) if '（' in filename else bar(filename.replace('.jpg',''))
+				bar()
 				proc_md5 = md5((filename+'+3').encode('UTF-8')).hexdigest()[13:-13]
 				if not proc_flag or (proc_flag and not proc_md5 in proc_list):
 					with open(pic_path, 'rb') as pic_bit:
