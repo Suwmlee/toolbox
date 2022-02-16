@@ -175,7 +175,7 @@ def get_gfriends_link(name):
 	else:
 		return None
 
-def argparse_function(ver: str) -> [str, str, bool]:
+def argparse_function(ver: str):
     parser = argparse.ArgumentParser()
     parser.add_argument("-c", "--config", default='config.ini', nargs='?', help="The config file Path.")
     parser.add_argument("-q", "--quiet", dest='quietflag', action="store_true", help="Assume Yes on all queries and Print logs to file.")

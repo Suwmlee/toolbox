@@ -57,6 +57,7 @@ def findfolderwithextraext(folder, suffix):
         elif os.path.splitext(f)[1].lower() in suffix:
             dirname, basename = os.path.split(f)
             basename2 = os.path.splitext(basename)[0]
+            # TODO 检测不完全
             onlycheckV = False
             if basename2 == 'fanart' or basename2 == 'poster':
                 onlycheckV = True
@@ -87,18 +88,18 @@ if __name__ == '__main__':
     print("extra subs:")
     subs = findfolderwithextrasubs(folder, sub_type)
 
-    print("=======================================")
-    print("extra files:")
-    imgs = findfolderwithextraext(folder, ext_type)
+    # print("=======================================")
+    # print("extra files:")
+    # imgs = findfolderwithextraext(folder, ext_type)
 
     cleanSub = input('Clean all extra subs Yes/No (default:No):')
     if cleanSub.lower() == "y" or cleanSub.lower() == "yes":
         for sub in subs:
             os.remove(sub)
         print("Clean Subs Done")
-    cleanExtra = input('Clean all extra files Yes/No (default:No):')
-    if cleanExtra.lower() == "y" or cleanExtra.lower() == "yes":
-        for img in imgs:
-            os.remove(img)
-        print("Clean Extra Done")
+    # cleanExtra = input('Clean all extra files Yes/No (default:No):')
+    # if cleanExtra.lower() == "y" or cleanExtra.lower() == "yes":
+    #     for img in imgs:
+    #         os.remove(img)
+    #     print("Clean Extra Done")
     print("Done")
