@@ -1,5 +1,10 @@
 #!/usr/local/bin/python3
 # -*- coding: utf-8 -*-
+""" Optimize Movies folder
+
+检测,删除影视目录额外文件
+检测没有匹配视频的额外多余文件(例如 字幕,nfo,jpg等)
+"""
 import os
 
 

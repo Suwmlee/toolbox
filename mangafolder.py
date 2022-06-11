@@ -1,5 +1,12 @@
+#!/bin/python3
 # -*- coding: utf-8 -*-
 """ Optimize manga folder
+
+解析tachiyomi下载的文件
+优化文件名并压缩
+转移到指定目录
+
+含:批量重命名等方法
 
 """
 import os
@@ -27,11 +34,16 @@ def finadAllFiles(root, escape_folder):
 
 
 def replaceParentheses(basestr: str):
-    for i in basestr:
-        if i in ['(', '【', '（']:
-            basestr = basestr.replace(i, "[")
-        if i in [')', '】', '）']:
-            basestr = basestr.replace(i, "]")
+    """ 替换特殊符号
+    """
+    if '（' in basestr:
+        basestr = basestr.replace('（', '(')
+    if '）' in basestr:
+        basestr = basestr.replace('）', ')')
+    if '【' in basestr:
+        basestr = basestr.replace('【', '[')
+    if '】' in basestr:
+        basestr = basestr.replace('】', ']')
     return basestr
 
 
@@ -97,70 +109,15 @@ def optimizeNaming(root):
         os.rename(single, fullpath)
 
 
-def changeFolderName(root):
-    """ 更改文件夹名字
-
-    针对 Tachiyomi 下载的文件
-    """
-    dirs = os.listdir(root)
-    for d in dirs:
-        fullpath = os.path.join(root, d)
-        if os.path.isdir(fullpath) and d.startswith("_第"):
-            print(fullpath)
-            temp = d.split(' ')
-            newname = temp[1].strip('[]話')
-            for i in range(len(temp)):
-                if i == 2:
-                    newname = newname + " - " + temp[2].strip('-')
-                elif i > 2:
-                    newname = newname + " " + temp[i].strip('-')
-            # print(newname)
-            newpath = os.path.join(root, newname)
-            print(newpath)
-            os.rename(fullpath, newpath)
-        elif os.path.isdir(fullpath) and d.startswith("_单章节"):
-            rootname = os.path.basename(root)
-            newname = rootname
-            newpath = os.path.join(root, newname)
-            print(newpath)
-            os.rename(fullpath, newpath)
-
-
-def changeZipName(root):
-    """ 更改压缩文件名字
-
-    修正以前的命名
-    """
-    dirs = os.listdir(root)
-    file_type = ['.zip', '.rar']
-    filters = "过滤名"
-    for d in dirs:
-        fullpath = os.path.join(root, d)
-        if os.path.splitext(fullpath)[1].lower() in file_type and d.startswith(filters):
-            print(fullpath)
-            name, ext = os.path.splitext(d)
-            temp = name.split(' ')
-            newname = temp[1].strip('[]話')
-            for i in range(len(temp)):
-                if i == 2:
-                    newname = newname + " - " + temp[2].strip('-')
-                elif i > 2:
-                    newname = newname + " " + temp[i].strip('-')
-            # print(newname)
-            newpath = os.path.join(root, newname + ext)
-            print(newpath)
-            os.rename(fullpath, newpath)
-
-
-def zipFolder(root):
+def zipFolder(source):
     """ 压缩root目录下的文件夹
 
     压缩后的文件夹不会嵌套文件夹
     """
     # root = os.path.dirname(__file__)
-    dirs = os.listdir(root)
+    dirs = os.listdir(source)
     for d in dirs:
-        fullpath = os.path.join(root, d)
+        fullpath = os.path.join(source, d)
         if os.path.isdir(fullpath):
             startdir = fullpath  #要压缩的文件夹路径
             file_news = startdir +'.zip' # 压缩后文件夹的名字
@@ -192,22 +149,133 @@ def changePicName(root):
             shutil.copyfile(fullpath, newpath)
 
 
+def tachiyomiManga(root, dstfolder) -> dict:
+    """
+    处理tachiyomi下载目录下具体漫画:
+
+    """
+    print("当前漫画目录:" + root)
+    manganame = os.path.basename(root)
+    manganame = updateMangaName(manganame)
+    # 修正漫画名字
+    dirs = os.listdir(root)
+    chapters = []
+    for entry in dirs:
+        if entry == '@eaDir':
+            print("忽略群晖文件夹")
+            continue
+        full = os.path.join(root, entry)
+        if os.path.isdir(full):
+            # 忽略 停刊公告/休刊公告/休刊通知 文件夹
+            if '停刊公告' in entry or '休刊公告' in entry or '休刊通知' in entry:
+                continue
+            chapters.append(entry)
+    modifiedManga = dict()
+    isSingle = False
+    if len(chapters) < 2:
+        if chapters[0] == '_单章节':
+            print("是单本漫画")
+            isSingle = True
+        elif chapters[0] == '_Ch. 1':
+            print("可能是单本漫画,目前只有一个章节")
+            isSingle = True
+    if isSingle:
+        # 单本 将第一章节直接输出为漫画目录即可
+        sourcepath = os.path.join(root, chapters[0])
+        newpath = os.path.join(dstfolder, manganame, manganame)
+        print(f"单本漫画整理:  {chapters[0]} >>> {manganame}")
+        modifiedManga[sourcepath] = newpath
+    else:
+        for ch in chapters:
+            ch = str(ch)
+            if ch.startswith('_第1話'):
+                print("第一话 空格后跟随整个漫画名 需要特殊处理")
+                oldpath = os.path.join(root, ch)
+                newpath = os.path.join(dstfolder, manganame, '1')
+                print(f"章节更新:  {ch} >>> 1 ")
+                modifiedManga[oldpath] = newpath
+            elif ' ' in ch:
+                # 存在空格的 直接删除第一个之前内容
+                oldpath = os.path.join(root, ch)
+                newch = ch[ch.index(' '):].strip().replace(' - ', ' ')
+                results = regexMatch(newch, '第[\d]*話')
+                if results:
+                    print("章节存在特殊情况 第xxx話")
+                    num = results[0].strip('第話')
+                    newch = newch.replace(results[0], num)
+                # print(f"处理后 {newch}")
+                newpath = os.path.join(dstfolder, manganame, newch)
+                print(f"章节更新:  {ch} >>> {newch}")
+                modifiedManga[oldpath] = newpath
+            else:
+                print("!!!!! 特殊章节")
+                print(ch)
+                print("!!!!!")
+                raise
+    print("\n")
+    return modifiedManga
+
+
+def tachiyomiZip(srcfolder, dest):
+    """ 压缩源文件夹到目标文件
+    """
+    destfile = dest + '.zip'
+    destfolder = os.path.dirname(destfile)
+    if not os.path.exists(destfolder):
+        os.makedirs(destfolder)
+    if not os.path.exists(destfile):
+        z = zipfile.ZipFile(destfile, 'w', zipfile.ZIP_DEFLATED)
+        dirs = os.listdir(srcfolder)
+        for dir in dirs:
+            filepath = os.path.join(srcfolder, dir)
+            if os.path.isdir(filepath):
+                continue
+            if dir == '.nomedia':
+                continue
+            z.write(filepath, filepath)
+        z.close()
+    else:
+        print(f"跳过压缩: 已存在压缩文件 [{destfile}]")
+        print(f"跳过压缩: 已存在压缩文件 [{destfile}]")
+
+
+def updateMangaName(orignal):
+    """ 更新漫画名
+    """
+    print(f"原始漫画名: {orignal}")
+    name = replaceParentheses(orignal)
+    replaces = ['个人汉化', 'DL版', '个人整理制作版', '禁漫掃圖組', '風的工房',
+                '中國翻訳', '中国翻訳', 'C97', 'C96', '個人整合', '禁漫天堂']
+    for r in replaces:
+        name = name.replace(r, '')
+    name = name.replace('[]', '').replace('()', '').strip()
+    if name != orignal:
+        print(f"更新漫画名: {orignal} >>> {name}")
+    return name
+
 if __name__ == "__main__":
 
-    folder = input('Please enter manga folder:')
-    # folder = 'E:\\Github\\seedbox\\test'
-    if folder == '':
-        folder = os.getcwd()
-        print("未输入，使用当前目录: "+ folder)
+    # root = input('Please enter manga folder:')
+    # if root == '':
+    #     root = os.getcwd()
+    #     print("未输入，使用当前目录: "+ root)
     # changePicName(folder)
     # optimizeNaming(folder)
 
-    changeZipName(folder)
+    # changeZipName(folder)
 
-    # Tachiyomi 漫画最顶层目录
-    # 修改每个目录里的文件夹命名并压缩
-    # dirs = os.listdir(folder)
-    # for d in dirs:
-    #     fullpath = os.path.join(folder, d)
-    #     changeFolderName(fullpath)
-    #     zipFolder(fullpath)
+    # 处理tachiyomi下载目录
+    root = 'tachiyomi下载目录'
+    dst = '放压缩后文件的目录'
+    dirs = os.listdir(root)
+    for entry in dirs:
+        full = os.path.join(root, entry)
+        if os.path.isdir(full):
+            if entry == '@eaDir':
+                print("忽略群晖文件夹")
+                continue
+            modified = tachiyomiManga(full, dst)
+            print("压缩漫画")
+            for key in modified.keys():
+                tachiyomiZip(key, modified.get(key))
+            print("Done! \n")
