@@ -429,7 +429,7 @@ if __name__ == "__main__":
                 print("Done! \n")
 
     komgalibs = [
-                ]
+    ]
     for komgalib in komgalibs:
         komgaManga(komgalib)
         cleanFolderWithoutSuffix(komgalib, MANGA_TYPE)
