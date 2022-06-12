@@ -401,20 +401,31 @@ if __name__ == "__main__":
     # changePicName(folder)
     # optimizeNaming(folder)
 
-    # changeZipName(folder)
-
     # 处理tachiyomi下载目录
-    root = 'tachiyomi下载目录'
-    dst = '放压缩后文件的目录'
-    dirs = os.listdir(root)
-    for entry in dirs:
-        full = os.path.join(root, entry)
-        if os.path.isdir(full):
-            if entry == '@eaDir':
-                print("忽略群晖文件夹")
-                continue
-            modified = tachiyomiManga(full, dst)
-            print("压缩漫画")
-            for key in modified.keys():
-                tachiyomiZip(key, modified.get(key))
-            print("Done! \n")
+    TEST_MODE = False
+    if TEST_MODE:
+        print("当前处于测试模式")
+
+    tachiyomifolders = [
+    ]
+
+    dst = '/volume1/Media/TEST'
+    for folder in tachiyomifolders:
+        dirs = os.listdir(folder)
+        for entry in dirs:
+            full = os.path.join(folder, entry)
+            if os.path.isdir(full):
+                if entry == '@eaDir':
+                    print("忽略群晖文件夹")
+                    continue
+                modified = tachiyomiManga(full, dst)
+                print("开始压缩...")
+                for key in modified.keys():
+                    tachiyomiZip(key, modified.get(key))
+                print("Done! \n")
+
+    komgalibs = [
+                ]
+    for komgalib in komgalibs:
+        komgaManga(komgalib)
+        cleanFolderWithoutSuffix(komgalib, MANGA_TYPE)
