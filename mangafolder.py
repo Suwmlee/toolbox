@@ -2,11 +2,11 @@
 # -*- coding: utf-8 -*-
 """ Optimize manga folder
 
-解析tachiyomi下载的文件
+管理 tachiyomi下载目录
 优化文件名并压缩
 转移到指定目录
 
-含:批量重命名等方法
+整理 komga 漫画库
 
 """
 import os
@@ -14,15 +14,16 @@ import re
 import shutil
 import zipfile
 
+MANGATYPE = ['.zip', '.rar', '.pdf', '.jpg', '.png', '.jpeg', '.bmp', '.gif']
 
-def finadAllFiles(root, escape_folder):
-    """ return files under directory 'root'
+def finadAllFiles(root, escape_folder:list=None):
+    """ return zip/rar files under directory 'root'
     """
     for folder in escape_folder:
         if folder in root:
             return []
     total = []
-    file_type = ['.zip', '.rar']
+    file_type = ['.zip', '.rar', '.pdf']
     dirs = os.listdir(root)
     for entry in dirs:
         f = os.path.join(root, entry)
@@ -132,11 +133,12 @@ def zipFolder(source):
                 z.close()
 
 
-def changePicName(root):
+def changePicName(root, start: int):
     """ 更改 jpg 名称编号
+    :param root:   目录
+    :param start:  起始编号
     """
     dirs = os.listdir(root)
-    start = 152
     for d in dirs:
         fullpath = os.path.join(root, d)
         name, ext = os.path.splitext(d)
@@ -151,7 +153,9 @@ def changePicName(root):
 
 def tachiyomiManga(root, dstfolder) -> dict:
     """
-    处理tachiyomi下载目录下具体漫画:
+    处理tachiyomi下载目录下具体漫画
+    :param root:   tachiyomi下载目录
+    :param dstfolder:  整理后的输出目录
 
     """
     print("当前漫画目录:" + root)
@@ -187,31 +191,10 @@ def tachiyomiManga(root, dstfolder) -> dict:
         modifiedManga[sourcepath] = newpath
     else:
         for ch in chapters:
-            ch = str(ch)
-            if ch.startswith('_第1話'):
-                print("第一话 空格后跟随整个漫画名 需要特殊处理")
-                oldpath = os.path.join(root, ch)
-                newpath = os.path.join(dstfolder, manganame, '1')
-                print(f"章节更新:  {ch} >>> 1 ")
-                modifiedManga[oldpath] = newpath
-            elif ' ' in ch:
-                # 存在空格的 直接删除第一个之前内容
-                oldpath = os.path.join(root, ch)
-                newch = ch[ch.index(' '):].strip().replace(' - ', ' ')
-                results = regexMatch(newch, '第[\d]*話')
-                if results:
-                    print("章节存在特殊情况 第xxx話")
-                    num = results[0].strip('第話')
-                    newch = newch.replace(results[0], num)
-                # print(f"处理后 {newch}")
-                newpath = os.path.join(dstfolder, manganame, newch)
-                print(f"章节更新:  {ch} >>> {newch}")
-                modifiedManga[oldpath] = newpath
-            else:
-                print("!!!!! 特殊章节")
-                print(ch)
-                print("!!!!!")
-                raise
+            newch = updateChapter(ch)
+            oldpath = os.path.join(root, ch)
+            newpath = os.path.join(dstfolder, manganame, newch)
+            modifiedManga[oldpath] = newpath
     print("\n")
     return modifiedManga
 
@@ -242,16 +225,154 @@ def tachiyomiZip(srcfolder, dest):
 def updateMangaName(orignal):
     """ 更新漫画名
     """
-    print(f"原始漫画名: {orignal}")
+    # print(f"原始漫画名: {orignal}")
     name = replaceParentheses(orignal)
-    replaces = ['个人汉化', 'DL版', '个人整理制作版', '禁漫掃圖組', '風的工房',
-                '中國翻訳', '中国翻訳', 'C97', 'C96', '個人整合', '禁漫天堂']
+    replaces = ['DL版', '个人整理制作版', '個人整合', '禁漫掃圖組', '風的工房',
+                '中國翻訳', '中国翻訳']
     for r in replaces:
         name = name.replace(r, '')
-    name = name.replace('[]', '').replace('()', '').strip()
+    name = re.sub('C\d{2}', '', name, re.IGNORECASE)
+    # 更改[]顺序
+    results = regexMatch(name, '[\[](.*?)[\]]')
+    if results:
+        retagname = name
+        sorts = ['汉化','漢化','無碼','全彩','薄碼','個人','无修正']
+        retags = []
+        for tag in results:
+            for s in sorts:
+                if s in tag:
+                    retags.append(tag)
+        for stag in retags:
+            retagname = retagname.replace('['+stag+']', '')
+            retagname = retagname + '['+ stag.strip('-_ ')+']'
+        if retagname != name:
+            print(f"重新排序tag  {name} {retagname}")
+            name = retagname
+    name = name.replace('[漢化]', '').replace('[汉化]', '')
+    name = name.replace('[]', '').replace('()', '').replace('] [', '][').strip()
+    # 多空格合并
+    name = ' '.join(name.split())
     if name != orignal:
         print(f"更新漫画名: {orignal} >>> {name}")
     return name
+
+
+def updateChapter(orignal: str):
+    """ 更新章节名
+    """
+    if orignal.startswith('_第1話'):
+        print("第一话 空格后跟随整个漫画名 需要特殊处理")
+        print(f"章节更新:  {orignal} >>> 1 ")
+        return '1'
+    elif ' ' in orignal:
+        if orignal.startswith('_第') or orignal.startswith('_Ch'):
+            # tachiyomi 下载格式
+            newch = orignal[orignal.index(' '):].strip()
+        newch = orignal.replace(' - ', ' ')
+        results = regexMatch(newch, '第[\d]*話')
+        if results:
+            print("章节存在特殊情况 第xxx話")
+            num = results[0].strip('第話')
+            newch = newch.replace(results[0], num)
+        if orignal != newch:
+            print(f"章节更新:  {orignal} >>> {newch}")
+        return newch
+    else:
+        # print(f"不需要更新 {orignal} 可能是特殊情况")
+        return orignal
+
+
+def komgaManga(folder):
+    """ 整理 komga 漫画库内的文件
+    
+    komga都是zip文件, 都是两级目录
+    zip一级,zip上面一级
+    """
+    print("开始整理漫画库:" + folder)
+    files = finadAllFiles(folder, ['@eaDir'])
+    for cfile in files:
+        mid = str(cfile).replace(folder, '')
+        # print(f"文件位于顶层的结构 {mid} \n")
+        mids = os.path.normpath(mid).split(os.path.sep)
+        # filename = os.path.splitext(os.path.basename(s))[0]
+        alllvl = len(mids)
+        if alllvl > 3 and mids[alllvl-4] != '':
+            print(f"!!!居然有三级以上目录!!! {cfile}")
+            raise
+        mangazip = mids[alllvl-1] if alllvl > 0 else None
+        mangafolder = mids[alllvl-2] if alllvl > 1 else None
+        authorfolder = mids[alllvl-3] if alllvl > 2 else None
+        mangazipname = os.path.splitext(mangazip)[0]
+        
+        author = ''
+        manganame = ''
+        chapter = ''
+        if not mangafolder:
+            manganame = mangazipname
+            print(f"没有上级目录,只有zip 是单本漫画,且需要增加一级目录 {manganame}")
+        elif mangazipname == mangafolder:
+            manganame = mangafolder
+            print(f"压缩文件名与上级目录相同,单本漫画 {manganame}")
+        else:
+            if authorfolder:
+                author = authorfolder.strip('[]')
+                manganame = mangafolder
+                chapter = mangazipname
+                print(f"作者合集 {author} --- {manganame} --- {chapter}")
+            else:
+                # [DISTANCE] / [DISTANCE] あねこもりplus
+                result = regexMatch(mangafolder, '[\[](.*?)[\]]')
+                if result and len(result) == 1 and result[0] == mangafolder.strip('[]'):
+                    manganame = mangazipname
+                    author = result[0]
+                    print(f"上级目录被 [] 包住,可能是作者合集 {author} --- {manganame}")
+                else:
+                    manganame = mangafolder
+                    chapter = mangazipname
+                    print(f"可能是多章节漫画  {manganame}  --- {chapter}")
+        if author != '':
+            author = '['+ author +']'
+        if manganame != '':
+            manganame = updateMangaName(manganame)
+        if chapter != '':
+            chapter = updateChapter(chapter)
+        else:
+            chapter = manganame
+        newpath = os.path.join(folder, author, manganame, chapter)
+        ext = os.path.splitext(cfile)[1]
+        newpath = newpath + ext
+        if newpath != cfile:
+            print(f"!!!更新:  {cfile} >>> {newpath}")
+            renamefile(cfile, newpath)
+        print("\n")
+
+def renamefile(src, dst):
+    if os.path.exists(src):
+        dir = os.path.dirname(dst)
+        if not os.path.exists(dir):
+            os.makedirs(dir)
+        os.rename(src, dst)
+    else:
+        raise ValueError(f"重命名 源文件不存在 {src}")
+
+
+def cleanFolderWithoutSuffix(folder, suffix):
+    """ 删除无匹配后缀文件的目录
+    """
+    hassuffix = False
+    dirs = os.listdir(folder)
+    for file in dirs:
+        f = os.path.join(folder, file)
+        if os.path.isdir(f):
+            hastag = cleanFolderWithoutSuffix(f, suffix)
+            if hastag:
+                hassuffix = True
+        elif os.path.splitext(f)[1].lower() in suffix:
+            hassuffix = True
+    if not hassuffix:
+        print(f"删除无匹配后缀文件目录 [{folder}]")
+        shutil.rmtree(folder)
+    return hassuffix
 
 if __name__ == "__main__":
 
