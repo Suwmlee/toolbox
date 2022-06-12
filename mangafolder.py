@@ -265,10 +265,11 @@ def updateChapter(orignal: str):
         print(f"章节更新:  {orignal} >>> 1 ")
         return '1'
     elif ' ' in orignal:
-        if orignal.startswith('_第') or orignal.startswith('_Ch'):
+        newch = orignal
+        if newch.startswith('_第') or newch.startswith('_Ch'):
             # tachiyomi 下载格式
-            newch = orignal[orignal.index(' '):].strip()
-        newch = orignal.replace(' - ', ' ')
+            newch = newch[newch.index(' '):].strip()
+        newch = newch.replace(' - ', ' ')
         results = regexMatch(newch, '第[\d]*話')
         if results:
             print("章节存在特殊情况 第xxx話")
