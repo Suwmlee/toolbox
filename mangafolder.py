@@ -14,7 +14,9 @@ import re
 import shutil
 import zipfile
 
-MANGATYPE = ['.zip', '.rar', '.pdf', '.jpg', '.png', '.jpeg', '.bmp', '.gif']
+# 测试模式，不会删除/更改文件
+TEST_MODE = True
+MANGA_TYPE = ['.zip', '.rar', '.pdf', '.jpg', '.png', '.jpeg', '.bmp', '.gif']
 
 def finadAllFiles(root, escape_folder:list=None):
     """ return zip/rar files under directory 'root'
@@ -202,6 +204,8 @@ def tachiyomiManga(root, dstfolder) -> dict:
 def tachiyomiZip(srcfolder, dest):
     """ 压缩源文件夹到目标文件
     """
+    if TEST_MODE:
+        return
     destfile = dest + '.zip'
     destfolder = os.path.dirname(destfile)
     if not os.path.exists(destfolder):
@@ -313,32 +317,41 @@ def komgaManga(folder):
             print(f"没有上级目录,只有zip 是单本漫画,且需要增加一级目录 {manganame}")
         elif mangazipname == mangafolder:
             manganame = mangafolder
-            print(f"压缩文件名与上级目录相同,单本漫画 {manganame}")
+            if authorfolder:
+                author = authorfolder.strip('[]')
+                print(f"合集目录 当前是单本漫画, {manganame}")
+            else:
+                print(f"单本漫画 文件名与上级目录相同 {manganame}")
+                # TEST:增加作者文件夹,慎重增加,确认无误后再增加
+                # result = regexMatch(mangafolder, '[\[](.*?)[\]]')
+                # if result:
+                #     author = result[0]
         else:
             if authorfolder:
                 author = authorfolder.strip('[]')
                 manganame = mangafolder
                 chapter = mangazipname
-                print(f"作者合集 {author} --- {manganame} --- {chapter}")
+                print(f"合集目录 {author} --- {manganame} --- {chapter}")
             else:
                 # [DISTANCE] / [DISTANCE] あねこもりplus
                 result = regexMatch(mangafolder, '[\[](.*?)[\]]')
                 if result and len(result) == 1 and result[0] == mangafolder.strip('[]'):
                     manganame = mangazipname
                     author = result[0]
-                    print(f"上级目录被 [] 包住,可能是作者合集 {author} --- {manganame}")
+                    print(f"可能是作者合集 上级目录被 [] 包住 {author} --- {manganame}")
                 else:
                     manganame = mangafolder
                     chapter = mangazipname
                     print(f"可能是多章节漫画  {manganame}  --- {chapter}")
-        if author != '':
+        if author:
             author = '['+ author +']'
-        if manganame != '':
+        if manganame:
             manganame = updateMangaName(manganame)
-        if chapter != '':
+        if chapter:
             chapter = updateChapter(chapter)
         else:
             chapter = manganame
+
         newpath = os.path.join(folder, author, manganame, chapter)
         ext = os.path.splitext(cfile)[1]
         newpath = newpath + ext
@@ -348,6 +361,8 @@ def komgaManga(folder):
         print("\n")
 
 def renamefile(src, dst):
+    if TEST_MODE:
+        return
     if os.path.exists(src):
         dir = os.path.dirname(dst)
         if not os.path.exists(dir):
@@ -360,6 +375,8 @@ def renamefile(src, dst):
 def cleanFolderWithoutSuffix(folder, suffix):
     """ 删除无匹配后缀文件的目录
     """
+    if TEST_MODE:
+        return
     hassuffix = False
     dirs = os.listdir(folder)
     for file in dirs:
