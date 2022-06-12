@@ -329,18 +329,22 @@ def komgaManga(folder):
         else:
             if authorfolder:
                 author = authorfolder.strip('[]')
+            result = regexMatch(mangafolder, '[\[](.*?)[\]]')
+            if result and len(result) == 1 and result[0] == mangafolder.strip('[]'):
                 manganame = mangafolder
-                chapter = mangazipname
-                print(f"合集目录 {author} --- {manganame} --- {chapter}")
+                author = result[0]
+                print(f"可能是作者合集 上级目录被 [] 包住 {author} --- {manganame}")
             else:
-                # [DISTANCE] / [DISTANCE] あねこもりplus
-                result = regexMatch(mangafolder, '[\[](.*?)[\]]')
-                if result and len(result) == 1 and result[0] == mangafolder.strip('[]'):
-                    manganame = mangazipname
-                    author = result[0]
-                    print(f"可能是作者合集 上级目录被 [] 包住 {author} --- {manganame}")
+                # 注意 是以文件夹的漫画名为准
+                manganame = mangafolder
+                pfolder = os.path.dirname(cfile)
+                # 同目录下多少文件
+                cfiles = [ x  for x in files if x.startswith(pfolder)]
+                if len(cfiles) == 1:
+                    # 只有一个文件, 单本漫画
+                    chapter = mangafolder
+                    print(f"可能是单本漫画 只有一本  {manganame}  --- {chapter}")
                 else:
-                    manganame = mangafolder
                     chapter = mangazipname
                     print(f"可能是多章节漫画  {manganame}  --- {chapter}")
         if author:
@@ -402,7 +406,7 @@ if __name__ == "__main__":
     # optimizeNaming(folder)
 
     # 处理tachiyomi下载目录
-    TEST_MODE = False
+    TEST_MODE = True
     if TEST_MODE:
         print("当前处于测试模式")
 
