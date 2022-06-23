@@ -117,62 +117,8 @@ def regexMatch(basename, reg):
     return result
 
 
-def optimizeNaming(root):
-    """ TODO 优化命名
-    """
-    # `[作者] 名字 [章节/完结][语言][无修]`
-    files = finadAllFiles(root, '')
-    for single in files:
-        print("[+] 开始 " + single)
-        (filefolder, filename) = os.path.split(single)
-        base, ext = os.path.splitext(filename)
-        filename2 = base
-        # 过滤[]防止内部()
-        results = regexMatch(filename2, '\[(.+?)\]')
-        for i in results:
-            filename2 = str(filename2).replace('[' + i + ']', '')
-        # 替换剩余()符号
-        filename3 = replaceParentheses(filename2)
-        # 还原过滤的[]
-        filename4 = str(base).replace(filename2, filename3)
-        replacename = filename4
-        # 提取 所有tag 标题
-        tags = regexMatch(filename4, '\[(.+?)\]')
-        for j in tags:
-            filename4 = str(filename4).replace('[' + j + ']', '')
-        manganame = filename4.strip()
-        # 判断tag 是否有汉化标记
-        chstag = ['中国翻訳', '汉化', '中国語', 'chinese', 'chs', 'cht']
-        addchs = False
-        # 剔除非规范汉化标记
-        # for tag in tags:
-        #     if tag in chstag:
-        #         print("存在中文标记")
-        #         # 剔除标记
-        #         replacename = str(replacename).replace('[' + tag + ']', '')
-        #         addchs = True
-        # 是否增加汉化标记
-        if addchs:
-            finalname = replacename.replace(filename4, ' ' + manganame + ' [汉化]')
-        else:
-            finalname = replacename.replace(filename4, ' ' + manganame + ' ')
-        finalname = finalname.strip()
-
-        # 顶层文件增加嵌套文件夹
-        midfolder = str(filefolder).replace(root, '').lstrip("\\").lstrip("/")
-        if midfolder == '':
-            midfolder = finalname
-
-        fullpath = os.path.join(root, midfolder, finalname + ext)
-        newfolder = os.path.dirname(fullpath)
-        if not os.path.exists(newfolder):
-            os.makedirs(newfolder)
-        print("[+] 修正 " + fullpath)
-        os.rename(single, fullpath)
-
-
 def zipFolder(source):
-    """ 压缩root目录下的文件夹
+    """ TODO 压缩root目录下的文件夹
 
     压缩后的文件夹不会嵌套文件夹
     """
@@ -295,7 +241,7 @@ def updateMangaName(orignal):
         name = name.replace(r, '')
     name = re.sub('C\d{2}', '', name, re.IGNORECASE)
     # 更改[]顺序
-    results = regexMatch(name, '[\[](.*?)[\]]')
+    results = regexMatch(name, '\[(.*?)\]')
     if results:
         retagname = name
         sorts = ['汉化', '漢化', '無碼', '全彩', '薄碼', '個人', '无修正']
