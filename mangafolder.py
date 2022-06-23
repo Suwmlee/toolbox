@@ -18,7 +18,8 @@ import zipfile
 TEST_MODE = True
 MANGA_TYPE = ['.zip', '.rar', '.pdf', '.jpg', '.png', '.jpeg', '.bmp', '.gif']
 
-def finadAllFiles(root, escape_folder:list=None):
+
+def finadAllFiles(root, escape_folder: list = None):
     """ return zip/rar/pdf files under directory 'root'
     """
     for folder in escape_folder:
@@ -34,6 +35,7 @@ def finadAllFiles(root, escape_folder:list=None):
         elif f.lower().endswith(tuple(file_type)):
             total.append(f)
     return total
+
 
 def cleanFolderWithoutSuffix(folder, suffix):
     """ 删除无匹配后缀文件的目录
@@ -54,6 +56,7 @@ def cleanFolderWithoutSuffix(folder, suffix):
         print(f"删除无匹配后缀文件目录 [{folder}]")
         shutil.rmtree(folder)
     return hassuffix
+
 
 def zipfolder(srcfolder, destfile):
     """ 压缩 `srcfolder` 目录下的文件到 `destfile`
@@ -78,6 +81,7 @@ def zipfolder(srcfolder, destfile):
     else:
         print(f"跳过压缩: 已存在压缩文件 [{destfile}]")
         print(f"跳过压缩: 已存在压缩文件 [{destfile}]")
+
 
 def renamefile(src, dst):
     if TEST_MODE:
@@ -104,12 +108,14 @@ def replaceParentheses(basestr: str):
         basestr = basestr.replace('】', ']')
     return basestr
 
+
 def regexMatch(basename, reg):
     """ 正则过滤
     """
     prog = re.compile(reg, re.IGNORECASE | re.X | re.S)
     result = prog.findall(basename)
     return result
+
 
 def optimizeNaming(root):
     """ TODO 优化命名
@@ -156,13 +162,14 @@ def optimizeNaming(root):
         midfolder = str(filefolder).replace(root, '').lstrip("\\").lstrip("/")
         if midfolder == '':
             midfolder = finalname
-        
+
         fullpath = os.path.join(root, midfolder, finalname + ext)
-        newfolder= os.path.dirname(fullpath)
+        newfolder = os.path.dirname(fullpath)
         if not os.path.exists(newfolder):
             os.makedirs(newfolder)
         print("[+] 修正 " + fullpath)
         os.rename(single, fullpath)
+
 
 def zipFolder(source):
     """ 压缩root目录下的文件夹
@@ -174,16 +181,16 @@ def zipFolder(source):
     for d in dirs:
         fullpath = os.path.join(source, d)
         if os.path.isdir(fullpath):
-            startdir = fullpath  #要压缩的文件夹路径
-            file_news = startdir +'.zip' # 压缩后文件夹的名字
+            startdir = fullpath  # 要压缩的文件夹路径
+            file_news = startdir + '.zip'  # 压缩后文件夹的名字
             if not os.path.exists(file_news):
-                z = zipfile.ZipFile(file_news,'w',zipfile.ZIP_DEFLATED) #参数一：文件夹名
+                z = zipfile.ZipFile(file_news, 'w', zipfile.ZIP_DEFLATED)  # 参数一：文件夹名
                 for dirpath, dirnames, filenames in os.walk(startdir):
-                    fpath = dirpath.replace(startdir,'') #这一句很重要，不replace的话，就从根目录开始复制
-                    fpath = fpath and fpath + os.sep or ''#这句话理解我也点郁闷，实现当前文件夹以及包含的所有文件的压缩
+                    fpath = dirpath.replace(startdir, '')  # 这一句很重要，不replace的话，就从根目录开始复制
+                    fpath = fpath and fpath + os.sep or ''  # 这句话理解我也点郁闷，实现当前文件夹以及包含的所有文件的压缩
                     for filename in filenames:
-                        z.write(os.path.join(dirpath, filename),fpath+filename)
-                        print ('压缩成功: ' + d + " " + filename)
+                        z.write(os.path.join(dirpath, filename), fpath+filename)
+                        print('压缩成功: ' + d + " " + filename)
                 z.close()
 
 
@@ -206,7 +213,8 @@ def changePicNameByWeight(root, weight: int):
 
 #===== 整理Tachiyomi下载目录 开始 ==================
 
-def tachiyomiManage(folderdict:dict):
+
+def tachiyomiManage(folderdict: dict):
     """ 整理tachiyomi
     """
     for folder in folderdict:
@@ -221,9 +229,10 @@ def tachiyomiManage(folderdict:dict):
                 modified = tachiyomiMangaFolder(full, dst)
                 print("开始压缩...")
                 for key in modified.keys():
-                    dest =  modified.get(key) + '.zip'
+                    dest = modified.get(key) + '.zip'
                     zipfolder(key, dest)
                 print("Done! \n")
+
 
 def tachiyomiMangaFolder(root, dstfolder) -> dict:
     """
@@ -274,6 +283,7 @@ def tachiyomiMangaFolder(root, dstfolder) -> dict:
     print("\n")
     return modifiedManga
 
+
 def updateMangaName(orignal):
     """ 更新漫画名
     """
@@ -288,7 +298,7 @@ def updateMangaName(orignal):
     results = regexMatch(name, '[\[](.*?)[\]]')
     if results:
         retagname = name
-        sorts = ['汉化','漢化','無碼','全彩','薄碼','個人','无修正']
+        sorts = ['汉化', '漢化', '無碼', '全彩', '薄碼', '個人', '无修正']
         retags = []
         for tag in results:
             for s in sorts:
@@ -296,7 +306,7 @@ def updateMangaName(orignal):
                     retags.append(tag)
         for stag in retags:
             retagname = retagname.replace('['+stag+']', '')
-            retagname = retagname + '['+ stag.strip('-_ ')+']'
+            retagname = retagname + '[' + stag.strip('-_ ')+']'
         if retagname != name:
             print(f"重新排序tag  {name} {retagname}")
             name = retagname
@@ -307,6 +317,7 @@ def updateMangaName(orignal):
     if name != orignal:
         print(f"更新漫画名: {orignal} >>> {name}")
     return name
+
 
 def updateChapter(orignal: str):
     """ 更新章节名
@@ -357,7 +368,7 @@ def komgaMangaLib(libfolder):
         mangafolder = mids[alllvl-2] if alllvl > 1 else None
         authorfolder = mids[alllvl-3] if alllvl > 2 else None
         mangazipname = os.path.splitext(mangazip)[0]
-        
+
         author = ''
         manganame = ''
         chapter = ''
@@ -388,7 +399,7 @@ def komgaMangaLib(libfolder):
                 manganame = mangafolder
                 pfolder = os.path.dirname(cfile)
                 # 同目录下多少文件
-                cfiles = [ x  for x in files if x.startswith(pfolder)]
+                cfiles = [x for x in files if x.startswith(pfolder)]
                 if len(cfiles) == 1:
                     # 只有一个文件, 单本漫画
                     chapter = mangafolder
@@ -397,7 +408,7 @@ def komgaMangaLib(libfolder):
                     chapter = mangazipname
                     print(f"可能是多章节漫画  {manganame}  --- {chapter}")
         if author:
-            author = '['+ author +']'
+            author = '[' + author + ']'
         if manganame:
             manganame = updateMangaName(manganame)
         if chapter:
@@ -414,10 +425,6 @@ def komgaMangaLib(libfolder):
         print("\n")
 
 
-
-
-
-
 if __name__ == "__main__":
 
     # 处理tachiyomi下载目录
@@ -426,7 +433,7 @@ if __name__ == "__main__":
         print("当前处于测试模式")
 
     tachiyomi = {
-        '/volume1/Media/manga':'/volume1/Media/TEST',
+        '/volume1/Media/manga': '/volume1/Media/TEST',
     }
     tachiyomiManage(tachiyomi)
 
