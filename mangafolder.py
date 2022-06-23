@@ -19,7 +19,7 @@ TEST_MODE = True
 MANGA_TYPE = ['.zip', '.rar', '.pdf', '.jpg', '.png', '.jpeg', '.bmp', '.gif']
 
 def finadAllFiles(root, escape_folder:list=None):
-    """ return zip/rar files under directory 'root'
+    """ return zip/rar/pdf files under directory 'root'
     """
     for folder in escape_folder:
         if folder in root:
@@ -31,9 +31,64 @@ def finadAllFiles(root, escape_folder:list=None):
         f = os.path.join(root, entry)
         if os.path.isdir(f):
             total += finadAllFiles(f, escape_folder)
-        elif os.path.splitext(f)[1].lower() in file_type:
+        elif f.lower().endswith(tuple(file_type)):
             total.append(f)
     return total
+
+def cleanFolderWithoutSuffix(folder, suffix):
+    """ 删除无匹配后缀文件的目录
+    """
+    if TEST_MODE:
+        return
+    hassuffix = False
+    dirs = os.listdir(folder)
+    for file in dirs:
+        f = os.path.join(folder, file)
+        if os.path.isdir(f):
+            hastag = cleanFolderWithoutSuffix(f, suffix)
+            if hastag:
+                hassuffix = True
+        elif os.path.splitext(f)[1].lower() in suffix:
+            hassuffix = True
+    if not hassuffix:
+        print(f"删除无匹配后缀文件目录 [{folder}]")
+        shutil.rmtree(folder)
+    return hassuffix
+
+def zipfolder(srcfolder, destfile):
+    """ 压缩 `srcfolder` 目录下的文件到 `destfile`
+    :param srcfolder: 需要压缩的目录,仅压缩此目录下的文件,不会深层压缩
+    """
+    if TEST_MODE:
+        return
+    destfolder = os.path.dirname(destfile)
+    if not os.path.exists(destfolder):
+        os.makedirs(destfolder)
+    if not os.path.exists(destfile):
+        z = zipfile.ZipFile(destfile, 'w', zipfile.ZIP_DEFLATED)
+        dirs = os.listdir(srcfolder)
+        for dir in dirs:
+            filepath = os.path.join(srcfolder, dir)
+            if os.path.isdir(filepath):
+                continue
+            if dir == '.nomedia':
+                continue
+            z.write(filepath, filepath)
+        z.close()
+    else:
+        print(f"跳过压缩: 已存在压缩文件 [{destfile}]")
+        print(f"跳过压缩: 已存在压缩文件 [{destfile}]")
+
+def renamefile(src, dst):
+    if TEST_MODE:
+        return
+    if os.path.exists(src):
+        dir = os.path.dirname(dst)
+        if not os.path.exists(dir):
+            os.makedirs(dir)
+        os.rename(src, dst)
+    else:
+        raise ValueError(f"重命名 源文件不存在 {src}")
 
 
 def replaceParentheses(basestr: str):
@@ -49,7 +104,6 @@ def replaceParentheses(basestr: str):
         basestr = basestr.replace('】', ']')
     return basestr
 
-
 def regexMatch(basename, reg):
     """ 正则过滤
     """
@@ -57,9 +111,8 @@ def regexMatch(basename, reg):
     result = prog.findall(basename)
     return result
 
-
 def optimizeNaming(root):
-    """ 优化命名
+    """ TODO 优化命名
     """
     # `[作者] 名字 [章节/完结][语言][无修]`
     files = finadAllFiles(root, '')
@@ -111,7 +164,6 @@ def optimizeNaming(root):
         print("[+] 修正 " + fullpath)
         os.rename(single, fullpath)
 
-
 def zipFolder(source):
     """ 压缩root目录下的文件夹
 
@@ -135,10 +187,10 @@ def zipFolder(source):
                 z.close()
 
 
-def changePicName(root, start: int):
-    """ 更改 jpg 名称编号
-    :param root:   目录
-    :param start:  起始编号
+def changePicNameByWeight(root, weight: int):
+    """ 原数字命名jpg文件,增加权重后重命名
+    :param root: 目录
+    :param weight: 增加的权重
     """
     dirs = os.listdir(root)
     for d in dirs:
@@ -146,25 +198,46 @@ def changePicName(root, start: int):
         name, ext = os.path.splitext(d)
         if os.path.isfile(fullpath) and ext == '.jpg':
             print(fullpath)
-            newname = "%03d" % (start+int(name))
+            newname = "%03d" % (weight+int(name))
             print("convert [{}] to [{}]".format(d, newname + ext))
             newpath = os.path.join(root, newname + ext)
             print(newpath)
             shutil.copyfile(fullpath, newpath)
 
+#===== 整理Tachiyomi下载目录 开始 ==================
 
-def tachiyomiManga(root, dstfolder) -> dict:
+def tachiyomiManage(folderdict:dict):
+    """ 整理tachiyomi
     """
-    处理tachiyomi下载目录下具体漫画
-    :param root:   tachiyomi下载目录
-    :param dstfolder:  整理后的输出目录
+    for folder in folderdict:
+        dst = folderdict.get(folder)
+        dirs = os.listdir(folder)
+        for entry in dirs:
+            full = os.path.join(folder, entry)
+            if os.path.isdir(full):
+                if entry == '@eaDir':
+                    print("忽略群晖文件夹")
+                    continue
+                modified = tachiyomiMangaFolder(full, dst)
+                print("开始压缩...")
+                for key in modified.keys():
+                    dest =  modified.get(key) + '.zip'
+                    zipfolder(key, dest)
+                print("Done! \n")
 
+def tachiyomiMangaFolder(root, dstfolder) -> dict:
+    """
+    处理tachiyomi具体漫画目录
+    :param root:   tachiyomi下载目录里的具体漫画目录
+    :param dstfolder:  整理后的输出目录
+    :return : 整理前后对应路径
     """
     print("当前漫画目录:" + root)
     manganame = os.path.basename(root)
-    manganame = updateMangaName(manganame)
     # 修正漫画名字
+    manganame = updateMangaName(manganame)
     dirs = os.listdir(root)
+    # 先获取所有章节
     chapters = []
     for entry in dirs:
         if entry == '@eaDir':
@@ -177,6 +250,7 @@ def tachiyomiManga(root, dstfolder) -> dict:
                 continue
             chapters.append(entry)
     modifiedManga = dict()
+    # 区分单本,多章节,合集等
     isSingle = False
     if len(chapters) < 2:
         if chapters[0] == '_单章节':
@@ -199,32 +273,6 @@ def tachiyomiManga(root, dstfolder) -> dict:
             modifiedManga[oldpath] = newpath
     print("\n")
     return modifiedManga
-
-
-def tachiyomiZip(srcfolder, dest):
-    """ 压缩源文件夹到目标文件
-    """
-    if TEST_MODE:
-        return
-    destfile = dest + '.zip'
-    destfolder = os.path.dirname(destfile)
-    if not os.path.exists(destfolder):
-        os.makedirs(destfolder)
-    if not os.path.exists(destfile):
-        z = zipfile.ZipFile(destfile, 'w', zipfile.ZIP_DEFLATED)
-        dirs = os.listdir(srcfolder)
-        for dir in dirs:
-            filepath = os.path.join(srcfolder, dir)
-            if os.path.isdir(filepath):
-                continue
-            if dir == '.nomedia':
-                continue
-            z.write(filepath, filepath)
-        z.close()
-    else:
-        print(f"跳过压缩: 已存在压缩文件 [{destfile}]")
-        print(f"跳过压缩: 已存在压缩文件 [{destfile}]")
-
 
 def updateMangaName(orignal):
     """ 更新漫画名
@@ -260,7 +308,6 @@ def updateMangaName(orignal):
         print(f"更新漫画名: {orignal} >>> {name}")
     return name
 
-
 def updateChapter(orignal: str):
     """ 更新章节名
     """
@@ -286,17 +333,19 @@ def updateChapter(orignal: str):
         # print(f"不需要更新 {orignal} 可能是特殊情况")
         return orignal
 
+#===== 整理Tachiyomi下载目录 结束 ==================
 
-def komgaManga(folder):
+
+def komgaMangaLib(libfolder):
     """ 整理 komga 漫画库内的文件
-    
+
     komga都是zip文件, 都是两级目录
     zip一级,zip上面一级
     """
-    print("开始整理漫画库:" + folder)
-    files = finadAllFiles(folder, ['@eaDir'])
+    print("开始整理漫画库:" + libfolder)
+    files = finadAllFiles(libfolder, ['@eaDir'])
     for cfile in files:
-        mid = str(cfile).replace(folder, '')
+        mid = str(cfile).replace(libfolder, '')
         # print(f"文件位于顶层的结构 {mid} \n")
         mids = os.path.normpath(mid).split(os.path.sep)
         # filename = os.path.splitext(os.path.basename(s))[0]
@@ -356,7 +405,7 @@ def komgaManga(folder):
         else:
             chapter = manganame
 
-        newpath = os.path.join(folder, author, manganame, chapter)
+        newpath = os.path.join(libfolder, author, manganame, chapter)
         ext = os.path.splitext(cfile)[1]
         newpath = newpath + ext
         if newpath != cfile:
@@ -364,72 +413,25 @@ def komgaManga(folder):
             renamefile(cfile, newpath)
         print("\n")
 
-def renamefile(src, dst):
-    if TEST_MODE:
-        return
-    if os.path.exists(src):
-        dir = os.path.dirname(dst)
-        if not os.path.exists(dir):
-            os.makedirs(dir)
-        os.rename(src, dst)
-    else:
-        raise ValueError(f"重命名 源文件不存在 {src}")
 
 
-def cleanFolderWithoutSuffix(folder, suffix):
-    """ 删除无匹配后缀文件的目录
-    """
-    if TEST_MODE:
-        return
-    hassuffix = False
-    dirs = os.listdir(folder)
-    for file in dirs:
-        f = os.path.join(folder, file)
-        if os.path.isdir(f):
-            hastag = cleanFolderWithoutSuffix(f, suffix)
-            if hastag:
-                hassuffix = True
-        elif os.path.splitext(f)[1].lower() in suffix:
-            hassuffix = True
-    if not hassuffix:
-        print(f"删除无匹配后缀文件目录 [{folder}]")
-        shutil.rmtree(folder)
-    return hassuffix
+
+
 
 if __name__ == "__main__":
-
-    # root = input('Please enter manga folder:')
-    # if root == '':
-    #     root = os.getcwd()
-    #     print("未输入，使用当前目录: "+ root)
-    # changePicName(folder)
-    # optimizeNaming(folder)
 
     # 处理tachiyomi下载目录
     TEST_MODE = True
     if TEST_MODE:
         print("当前处于测试模式")
 
-    tachiyomifolders = [
-    ]
-
-    dst = '/volume1/Media/TEST'
-    for folder in tachiyomifolders:
-        dirs = os.listdir(folder)
-        for entry in dirs:
-            full = os.path.join(folder, entry)
-            if os.path.isdir(full):
-                if entry == '@eaDir':
-                    print("忽略群晖文件夹")
-                    continue
-                modified = tachiyomiManga(full, dst)
-                print("开始压缩...")
-                for key in modified.keys():
-                    tachiyomiZip(key, modified.get(key))
-                print("Done! \n")
+    tachiyomi = {
+        '/volume1/Media/manga':'/volume1/Media/TEST',
+    }
+    tachiyomiManage(tachiyomi)
 
     komgalibs = [
     ]
     for komgalib in komgalibs:
-        komgaManga(komgalib)
+        komgaMangaLib(komgalib)
         cleanFolderWithoutSuffix(komgalib, MANGA_TYPE)
