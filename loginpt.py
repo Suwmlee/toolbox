@@ -31,13 +31,13 @@ from lxml import etree
 from http.cookies import SimpleCookie
 
 
-def request(url, cookies, proxyaddress):
+def request(url, cookies, proxyaddress, retry=3):
     """ 封装请求
     """
-    
     headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/60.0.3100.0 Safari/537.36"}
     timeout = 20
-    
+
+    proxydict = None
     if proxyaddress and proxyaddress != '':
         http_proxy = proxyaddress
         https_proxy = proxyaddress
@@ -45,9 +45,16 @@ def request(url, cookies, proxyaddress):
             "http": http_proxy,
             "https": https_proxy
         }
-        result = requests.get(str(url), headers=headers, cookies=cookies, proxies=proxydict, timeout=timeout)
-    else:
-        result = requests.get(str(url), headers=headers, cookies=cookies, timeout=timeout)
+
+    result = None
+    for i in range(retry):
+        try:
+            result = requests.get(url, headers=headers, cookies=cookies, proxies=proxydict, timeout=timeout)
+            if result.status_code == 200:
+                break
+        except Exception as e:
+            if i <= retry - 1:
+                raise e
     return result
 
 
@@ -55,16 +62,10 @@ def sendmessage(bottoken, chat_id, message: str, proxyaddress):
     """ 使用telegram bot发送结果
     """
     url = "https://api.telegram.org/bot"+bottoken+"/sendMessage?chat_id="+chat_id+"&text="+message
-    for i in range(3):
-        try:
-            result = request(url, None, proxyaddress)
-            if result.status_code == 200:
-                break
-        except:
-            pass
+    request(url, None, proxyaddress)
 
 
-def login(url: str, rawcookie, regex, proxyaddress = None):
+def login(url: str, rawcookie, regex, proxyaddress=None):
     """ 登录网站返回最近动向
     """
     try:
@@ -74,17 +75,13 @@ def login(url: str, rawcookie, regex, proxyaddress = None):
         for key, morsel in cookie.items():
             cookies[key] = morsel.value
 
-        for i in range(3):
-            try:
-                updatestatus = None
-                result = request(url, cookies, proxyaddress)
-
-                if result.status_code == 200:
-                    updatestatus = parse(result.text, regex)
-                    if updatestatus:
-                        break
-            except Exception as e:
-                updatestatus = str(e)
+        try:
+            updatestatus = None
+            result = request(url, cookies, proxyaddress)
+            if result.status_code == 200:
+                updatestatus = parse(result.text, regex)
+        except Exception as e:
+            updatestatus = str(e)
 
         if not updatestatus:
             updatestatus = str(result.status_code) + ' : ' + result.reason
@@ -122,7 +119,7 @@ def savelog(content: str):
 def main():
 
     config = ConfigParser()
-    config.read(os.path.join(os.path.dirname(__file__), "config.ini"), encoding='utf-8')
+    config.read(os.path.join(os.path.dirname(__file__), "loginpt.ini"), encoding='utf-8')
 
     bottoken = ''
     chat_id = ''
