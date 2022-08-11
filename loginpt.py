@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
 
-新建配置文件 config.ini :
+新建配置文件 loginpt.ini :
 
 [telegram bot name]
 chat_id =
@@ -34,7 +34,7 @@ from http.cookies import SimpleCookie
 def request(url, cookies, proxyaddress, retry=3):
     """ 封装请求
     """
-    headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/60.0.3100.0 Safari/537.36"}
+    headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/104.0.0.0 Safari/537.36"}
     timeout = 20
 
     proxydict = None
@@ -111,7 +111,7 @@ def parse(content, regex):
 
 
 def savelog(content: str):
-    filepath = os.path.join(os.path.dirname(__file__), "autocheck.log")
+    filepath = os.path.join(os.path.dirname(__file__), "loginpt.log")
     with open(filepath, 'a', encoding="utf-8") as file:
         file.write(content)
 
