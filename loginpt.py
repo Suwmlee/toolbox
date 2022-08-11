@@ -96,16 +96,10 @@ def parse(content, regex):
     try:
         html = etree.fromstring(content, etree.HTMLParser())
         if regex == "":
-            result = html.xpath('//td[contains(text(), "最近動向") or contains(text(), "最近动向")]/following-sibling::td[1]')
+            result = html.xpath('string(//td[contains(text(), "最近動向") or contains(text(), "最近动向")]/following-sibling::td[1])')
         else:
             result = html.xpath(regex)
-        for row in result:
-            info = row.xpath('string(.)')
-            if info:
-                info = str(info).replace('\n', '').replace('\r', '')
-                info = " ".join(info.split())
-                return info
-        return None
+        return result
     except:
         return None
 
