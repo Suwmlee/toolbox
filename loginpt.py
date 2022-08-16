@@ -99,6 +99,7 @@ def parse(content, regex):
             result = html.xpath('string(//td[contains(text(), "最近動向") or contains(text(), "最近动向")]/following-sibling::td[1])')
         else:
             result = html.xpath(regex)
+            result = " ".join([i.strip() for i in str(result).split(" ") if len(i.strip())])
         return result
     except:
         return None
