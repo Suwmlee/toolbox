@@ -13,10 +13,7 @@ import os
 import re
 import shutil
 import zipfile
-
-# 测试模式，不会删除/更改文件
-TEST_MODE = True
-MANGA_TYPE = ['.zip', '.rar', '.pdf', '.jpg', '.png', '.jpeg', '.bmp', '.gif']
+from configparser import ConfigParser
 
 
 def finadAllFiles(root, escape_folder: list = None):
@@ -80,10 +77,11 @@ def zipfolder(srcfolder, destfile):
         z.close()
     else:
         print(f"跳过压缩: 已存在压缩文件 [{destfile}]")
-        print(f"跳过压缩: 已存在压缩文件 [{destfile}]")
 
 
 def renamefile(src, dst):
+    """ 移动文件
+    """
     if TEST_MODE:
         return
     if os.path.exists(src):
@@ -173,11 +171,19 @@ def tachiyomiManage(folderdict: dict):
                     print("忽略群晖文件夹")
                     continue
                 modified = tachiyomiMangaFolder(full, dst)
+                if not modified:
+                    print("跳过... \n")
+                    continue
                 print("开始压缩...")
                 for key in modified.keys():
+                    cbzfile = key + '.cbz'
                     dest = modified.get(key) + '.zip'
-                    zipfolder(key, dest)
-                print("Done! \n")
+                    if os.path.exists(cbzfile):
+                        print(f"已经存在cbz文件,直接移动 {cbzfile} 到 {dest}")
+                        renamefile(cbzfile, dest)
+                    else:
+                        zipfolder(key, dest)
+                print(f"整理完成! {full} \n")
 
 
 def tachiyomiMangaFolder(root, dstfolder) -> dict:
@@ -204,10 +210,18 @@ def tachiyomiMangaFolder(root, dstfolder) -> dict:
             if '停刊公告' in entry or '休刊公告' in entry or '休刊通知' in entry:
                 continue
             chapters.append(entry)
+        else:
+            if entry.endswith('.cbz'):
+                # print("漫画目录已经是压缩文件")
+                chapter = os.path.splitext(entry)[0]
+                chapters.append(chapter)
     modifiedManga = dict()
     # 区分单本,多章节,合集等
     isSingle = False
-    if len(chapters) < 2:
+    if len(chapters) == 0:
+        print("未检测到章节")
+        return None
+    elif len(chapters) < 2:
         if chapters[0] == '_单章节':
             print("是单本漫画")
             isSingle = True
@@ -226,7 +240,6 @@ def tachiyomiMangaFolder(root, dstfolder) -> dict:
             oldpath = os.path.join(root, ch)
             newpath = os.path.join(dstfolder, manganame, newch)
             modifiedManga[oldpath] = newpath
-    print("\n")
     return modifiedManga
 
 
@@ -373,18 +386,34 @@ def komgaMangaLib(libfolder):
 
 if __name__ == "__main__":
 
+    config = ConfigParser()
+    config.read(os.path.join(os.path.dirname(__file__), "mangafolder.ini"), encoding='utf-8')
+
+    for configsection in config:
+        if configsection == 'General':
+            TEST_MODE = config.getboolean(configsection, "TEST", fallback=True)
+            mtypes = config[configsection]["MANGA_TYPE"].split(',')
+            MANGA_TYPE = [ '.'+i for i in mtypes]
+            print(f"漫画过滤类型: {MANGA_TYPE}")
+        if configsection == 'tachiyomi':
+            tachiyomi = dict()
+            for path in config[configsection]:
+                dic = config[configsection][path].split("::")
+                key = dic[0]
+                tachiyomi[key] = dic[1]
+        if configsection == 'komgalibs':
+            komgalibs = []
+            for lib in config[configsection]:
+                komgalibs.append(config[configsection][lib])
+
     # 处理tachiyomi下载目录
-    TEST_MODE = True
     if TEST_MODE:
         print("当前处于测试模式")
 
-    tachiyomi = {
-        '/volume1/Media/manga': '/volume1/Media/TEST',
-    }
-    tachiyomiManage(tachiyomi)
+    if len(tachiyomi):
+        tachiyomiManage(tachiyomi)
 
-    komgalibs = [
-    ]
-    for komgalib in komgalibs:
-        komgaMangaLib(komgalib)
-        cleanFolderWithoutSuffix(komgalib, MANGA_TYPE)
+    if len(komgalibs):
+        for komgalib in komgalibs:
+            komgaMangaLib(komgalib)
+            cleanFolderWithoutSuffix(komgalib, MANGA_TYPE)
