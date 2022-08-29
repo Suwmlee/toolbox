@@ -205,10 +205,10 @@ def tachiyomiMangaFolder(root, dstfolder) -> dict:
             print("忽略群晖文件夹")
             continue
         full = os.path.join(root, entry)
+        # 忽略 停刊公告/休刊公告/休刊通知 文件夹
+        if '停刊公告' in entry or '休刊公告' in entry or '休刊通知' in entry:
+            continue
         if os.path.isdir(full):
-            # 忽略 停刊公告/休刊公告/休刊通知 文件夹
-            if '停刊公告' in entry or '休刊公告' in entry or '休刊通知' in entry:
-                continue
             chapters.append(entry)
         else:
             if entry.endswith('.cbz'):
