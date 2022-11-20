@@ -88,7 +88,7 @@ def renamefile(src, dst):
         dir = os.path.dirname(dst)
         if not os.path.exists(dir):
             os.makedirs(dir)
-        os.rename(src, dst)
+        shutil.move(src, dst)
     else:
         raise ValueError(f"重命名 源文件不存在 {src}")
 
@@ -296,6 +296,11 @@ def updateChapter(orignal: str):
             print("章节存在特殊情况 第xxx話")
             num = results[0].strip('第話')
             newch = newch.replace(results[0], num)
+            tmps = newch.split(' ')
+            if len(tmps) > 1 and tmps[0].isdigit() and tmps[1].isdigit():
+                print("开头为两个数字 剔除 `第xxx話 第xxx話` `第xxx話 xxx` ")
+                newch = newch[newch.index(' '):].strip()
+        newch = newch.strip('-_')
         if orignal != newch:
             print(f"章节更新:  {orignal} >>> {newch}")
         return newch
