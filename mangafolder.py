@@ -13,7 +13,19 @@ import os
 import re
 import shutil
 import zipfile
-from configparser import ConfigParser
+from yaml import load  # pip install pyyaml
+
+
+def loadConfig():
+    try:
+        from yaml import CLoader as Loader
+    except ImportError:
+        from yaml import Loader
+    localPath = os.path.dirname(os.path.abspath(__file__))
+    data = None
+    with open(os.path.join(localPath, 'manga.yaml'), mode="r", encoding="utf8") as c:
+        data = load(c.read(), Loader=Loader)
+    return data
 
 
 def finadAllFiles(root, escape_folder: list = None):
@@ -158,32 +170,33 @@ def changePicNameByWeight(root, weight: int):
 #===== 整理Tachiyomi下载目录 开始 ==================
 
 
-def tachiyomiManage(folderdict: dict):
+def tachiyomiManage(src, dst):
     """ 整理tachiyomi
     """
-    for folder in folderdict:
-        dst = folderdict.get(folder)
-        dirs = os.listdir(folder)
-        for entry in dirs:
-            full = os.path.join(folder, entry)
-            if os.path.isdir(full):
-                if entry == '@eaDir':
-                    print("忽略群晖文件夹")
-                    continue
-                modified = tachiyomiMangaFolder(full, dst)
-                if not modified:
-                    print("跳过... \n")
-                    continue
-                print("开始压缩...")
-                for key in modified.keys():
-                    cbzfile = key + '.cbz'
-                    dest = modified.get(key) + '.zip'
-                    if os.path.exists(cbzfile):
-                        print(f"已经存在cbz文件,直接移动 {cbzfile} 到 {dest}")
-                        renamefile(cbzfile, dest)
-                    else:
-                        zipfolder(key, dest)
-                print(f"整理完成! {full} \n")
+    if not os.path.exists(src) or not os.path.exists(dst):
+        print(f"目录异常 {src} {dst}")
+        return
+    dirs = os.listdir(src)
+    for entry in dirs:
+        full = os.path.join(src, entry)
+        if os.path.isdir(full):
+            if entry == '@eaDir':
+                print("忽略群晖文件夹")
+                continue
+            modified = tachiyomiMangaFolder(full, dst)
+            if not modified:
+                print("跳过... \n")
+                continue
+            print("开始压缩...")
+            for key in modified.keys():
+                cbzfile = key + '.cbz'
+                dest = modified.get(key) + '.zip'
+                if os.path.exists(cbzfile):
+                    print(f"已经存在cbz文件,直接移动 {cbzfile} 到 {dest}")
+                    renamefile(cbzfile, dest)
+                else:
+                    zipfolder(key, dest)
+            print(f"整理完成! {full} \n")
 
 
 def tachiyomiMangaFolder(root, dstfolder) -> dict:
@@ -391,34 +404,21 @@ def komgaMangaLib(libfolder):
 
 if __name__ == "__main__":
 
-    config = ConfigParser()
-    config.read(os.path.join(os.path.dirname(__file__), "mangafolder.ini"), encoding='utf-8')
-
-    for configsection in config:
-        if configsection == 'General':
-            TEST_MODE = config.getboolean(configsection, "TEST", fallback=True)
-            mtypes = config[configsection]["MANGA_TYPE"].split(',')
-            MANGA_TYPE = [ '.'+i for i in mtypes]
-            print(f"漫画过滤类型: {MANGA_TYPE}")
-        if configsection == 'tachiyomi':
-            tachiyomi = dict()
-            for path in config[configsection]:
-                dic = config[configsection][path].split("::")
-                key = dic[0]
-                tachiyomi[key] = dic[1]
-        if configsection == 'komgalibs':
-            komgalibs = []
-            for lib in config[configsection]:
-                komgalibs.append(config[configsection][lib])
-
+    config = loadConfig()
+    TEST_MODE = config['dry-run']
+    MANGA_TYPE = config['manga-type']
+    print(f"漫画过滤类型: {MANGA_TYPE}")
     # 处理tachiyomi下载目录
     if TEST_MODE:
         print("当前处于测试模式")
 
-    if len(tachiyomi):
-        tachiyomiManage(tachiyomi)
+    if config['tachiyomi']['enable']:
+        for tachi in config['tachiyomi']['mapping']:
+            src = tachi['src']
+            dst = tachi['dst']
+            tachiyomiManage(src, dst)
 
-    if len(komgalibs):
-        for komgalib in komgalibs:
+    if config['komgalib']['enable']:
+        for komgalib in config['komgalib']['libraries']:
             komgaMangaLib(komgalib)
             cleanFolderWithoutSuffix(komgalib, MANGA_TYPE)

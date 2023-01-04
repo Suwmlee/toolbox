@@ -1,0 +1,33 @@
+
+dry-run: true
+manga-type:
+- .zip
+- .rar
+- .cbz
+- .pdf
+- .jpg
+- .png
+- .jpeg
+- .bmp
+- .gif
+
+tachiyomi:
+  enable: true
+  mapping:
+  - src: /volume1/Tachiyomi/xxx (ZH)
+    dst: /volume1/Media/New+
+  - src: /volume1/Tachiyomi/xxxx (ZH)
+    dst: /volume1/Media/Manga
+
+komgalib:
+  enable: false
+  libraries:
+  - /Media/New+
+  - /Media/★★★
+
+tags:
+- key: 汉化
+  alias:
+  - 中文
+  - 中字
+- key: 全彩
