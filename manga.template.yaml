@@ -13,17 +13,62 @@ manga-type:
 
 tachiyomi:
   enable: true
+  sources:
+  - /volume1/Media/ACG/Tachiyomi/xxxx (ZH)
+  - /volume1/Media/ACG/Tachiyomi/xx (ZH)
+  # 映射不同漫画类型位置
   mapping:
-  - src: /volume1/Tachiyomi/xxx (ZH)
+  - name: manhwa
+    # 移动类型
+    # keep 保持不动
+    # move 移动
+    default: keep
+    ended: move
+    dst: /volume1/Media/manhwa
+  - name: normal
+    default: keep
+  - name: tankobon
+    default: move
     dst: /volume1/Media/New+
-  - src: /volume1/Tachiyomi/xxxx (ZH)
-    dst: /volume1/Media/Manga
+  - name: series
+    default: keep
+    ended: move
+    dst: /volume1/Media/New+
+  - name: final
+    default: keep
+  # 筛选漫画类型
+  filters:
+  - name: manhwa
+    # 过滤类型 
+    # name      文件名
+    # folder    文件夹
+    # tankobon  单本
+    # series    系列
+    type: name
+    names:
+    - xxxx
+    - xxxxxx
+    - xxxx
+    # 完结漫画在过滤基础上进行文件名过滤
+    ended:
+    - xxx
+  # 普通类型
+  - name: normal
+    type: folder
+    folders:
+    - /volume1/Media/ACG/Tachiyomi/Mangabz (ZH)
+  - name: tankobon
+    type: tankobon
+  - name: series
+    type: series
+    ended:
+    - maganame
 
 komgalib:
   enable: false
   libraries:
-  - /Media/New+
-  - /Media/★★★
+  - /volume1/Media/ACG/New+
+  - /volume1/Media/ACG/Manga
 
 tags:
 - key: 汉化
