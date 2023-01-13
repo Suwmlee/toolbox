@@ -17,6 +17,48 @@ def loadConfig(configPath):
     return data
 
 
+def findMangaChapter(root):
+    """ 获取目录下的所有有效章节
+    """
+    dirs = os.listdir(root)
+    chapters = []
+    for entry in dirs:
+        if entry == '@eaDir':
+            print("忽略群晖文件夹")
+            continue
+        if entry.endswith('_tmp'):
+            print("忽略临时文件夹")
+            continue
+        full = os.path.join(root, entry)
+        # 忽略 停刊公告/休刊公告/休刊通知 文件夹
+        if '停刊公告' in entry or '休刊公告' in entry or '休刊通知' in entry:
+            continue
+        if os.path.isdir(full):
+            chapters.append(entry)
+        else:
+            if entry.endswith('.cbz'):
+                # print("漫画目录已经是压缩文件")
+                chapter = os.path.splitext(entry)[0]
+                chapters.append(chapter)
+    return chapters
+
+
+def checkIfTankobonByChapter(chapters):
+    # 区分单本,多章节,合集等
+    isTankobon = False
+    if len(chapters) == 0:
+        print("未检测到章节")
+        raise ValueError("未检测到章节")
+    elif len(chapters) < 2:
+        if chapters[0] == '_单章节' or chapters[0] == '单章节':
+            print("是单本漫画")
+            isTankobon = True
+        elif chapters[0] == '_Ch. 1' or chapters[0] == 'Ch. 1':
+            print("可能是单本漫画,目前只有一个章节")
+            isTankobon = True
+    return isTankobon
+
+
 def renamefile(src, dst):
     """ 移动文件
     """

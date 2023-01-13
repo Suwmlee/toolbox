@@ -3,104 +3,10 @@
 
 import os
 import re
+from mangainfo import MangaInfo
 from utils import loadConfig, regexMatch, renamefile, replaceParentheses, zipfolder
 
 DEBUG_MODE = True
-
-
-class MangaInfo():
-
-    def __init__(self, root: str):
-        self.isManga = True
-        self.fullPath = root
-        self.name = os.path.basename(root)
-        self.chapters = findMangaChapter(root)
-        # 检测单本，多本
-        if len(self.chapters) < 1:
-            self.isManga = False
-            return
-        if checkIfTankobonByChapter(self.chapters):
-            self.isTanbokon = True
-            self.isSeries = False
-        else:
-            self.isTanbokon = False
-            self.isSeries = True
-
-    def initExtra(self):
-        self.typeName = None
-        self.ended = False
-
-        self.keepTag = True
-        self.dstFolder = ''
-
-    def analysisManga(self, config):
-        self.initExtra()
-        self.analysisMangaType(config)
-        self.queryMangaMapping(config)
-
-    def analysisMangaType(self, config):
-        """ 
-        type: name, folder, tanbokon, series
-        """
-        # 从上往下依次判断
-        for filter in config['filters']:
-            if filter['type'] == 'name':
-                if self.name in filter['names']:
-                    self.typeName = filter['name']
-                if self.name in filter['ended']:
-                    self.ended = True
-            elif filter['type'] == 'folder':
-                for folder in filter['folders']:
-                    if self.fullPath.startswith(folder):
-                        self.typeName = filter['name']
-                        break
-                if self.name in filter['ended']:
-                    self.ended = True
-            elif filter['type'] == 'tanbokon':
-                if self.isTanbokon:
-                    self.typeName = filter['name']
-                if self.name in filter['ended']:
-                    self.ended = True
-            elif filter['type'] == 'series':
-                if self.isSeries:
-                    self.typeName = filter['name']
-                if self.name in filter['ended']:
-                    self.ended = True
-
-    def queryMangaMapping(self, config):
-        """ 查询漫画映射
-        """
-        for map in config['mapping']:
-            if map['name'] == self.typeName:
-                if self.ended:
-                    flag = map['ended']
-                else:
-                    flag = map['default']
-                if flag == 'move':
-                    self.dstFolder = map['dst']
-                    self.keepTag = False
-                break
-
-    def moveMangaChapterList(self):
-        """ 获取移动的章节列表
-        """
-        # 修正漫画名字
-        modifiedManga = dict()
-
-        manganame = updateMangaName(self.name)
-        if self.isTanbokon:
-            # 单本 将第一章节直接输出为漫画目录即可
-            sourcepath = os.path.join(self.fullPath, self.chapters[0])
-            newpath = os.path.join(self.dstFolder, manganame, manganame)
-            print(f"单本漫画整理:  {self.chapters[0]} >>> {manganame}")
-            modifiedManga[sourcepath] = newpath
-        else:
-            for ch in self.chapters:
-                newch = updateChapter(ch)
-                oldpath = os.path.join(self.fullPath, ch)
-                newpath = os.path.join(self.dstFolder, manganame, newch)
-                modifiedManga[oldpath] = newpath
-        return modifiedManga
 
 
 def moveManga(config):
@@ -132,7 +38,7 @@ def moveManga(config):
             if mangaInfo.keepTag:
                 continue
             else:
-                modified = mangaInfo.moveMangaChapterList()
+                modified = moveMangaChapterList(mangaInfo)
                 if not modified:
                     print("跳过... \n")
                     continue
@@ -151,46 +57,26 @@ def moveManga(config):
                 print(f"整理完成! {full} \n")
 
 
-def findMangaChapter(root):
-    """ 获取目录下的所有有效章节
+def moveMangaChapterList(mangaInfo: MangaInfo):
+    """ 获取移动的章节列表
     """
-    dirs = os.listdir(root)
-    chapters = []
-    for entry in dirs:
-        if entry == '@eaDir':
-            print("忽略群晖文件夹")
-            continue
-        if entry.endswith('_tmp'):
-            print("忽略临时文件夹")
-            continue
-        full = os.path.join(root, entry)
-        # 忽略 停刊公告/休刊公告/休刊通知 文件夹
-        if '停刊公告' in entry or '休刊公告' in entry or '休刊通知' in entry:
-            continue
-        if os.path.isdir(full):
-            chapters.append(entry)
-        else:
-            if entry.endswith('.cbz'):
-                # print("漫画目录已经是压缩文件")
-                chapter = os.path.splitext(entry)[0]
-                chapters.append(chapter)
-    return chapters
+    # 修正漫画名字
+    modifiedManga = dict()
 
-
-def checkIfTankobonByChapter(chapters):
-    # 区分单本,多章节,合集等
-    isTankobon = False
-    if len(chapters) == 0:
-        print("未检测到章节")
-        return None
-    elif len(chapters) < 2:
-        if chapters[0] == '_单章节' or chapters[0] == '单章节':
-            print("是单本漫画")
-            isTankobon = True
-        elif chapters[0] == '_Ch. 1' or chapters[0] == 'Ch. 1':
-            print("可能是单本漫画,目前只有一个章节")
-            isTankobon = True
-    return isTankobon
+    manganame = updateMangaName(mangaInfo.name)
+    if mangaInfo.isTanbokon:
+        # 单本 将第一章节直接输出为漫画目录即可
+        sourcepath = os.path.join(mangaInfo.fullPath, mangaInfo.chapters[0])
+        newpath = os.path.join(mangaInfo.dstFolder, manganame, manganame)
+        print(f"单本漫画整理:  {mangaInfo.chapters[0]} >>> {manganame}")
+        modifiedManga[sourcepath] = newpath
+    else:
+        for ch in mangaInfo.chapters:
+            newch = updateChapter(ch)
+            oldpath = os.path.join(mangaInfo.fullPath, ch)
+            newpath = os.path.join(mangaInfo.dstFolder, manganame, newch)
+            modifiedManga[oldpath] = newpath
+    return modifiedManga
 
 
 def updateMangaName(orignal):
