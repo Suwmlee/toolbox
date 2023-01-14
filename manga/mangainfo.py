@@ -40,28 +40,24 @@ class MangaInfo():
         """
         # 从上往下依次判断
         for filter in config['filters']:
+            if 'ended' in filter and self.name in filter['ended']:
+                self.ended = True
+                self.typeName = filter['name']
+                break
             if filter['type'] == 'name':
                 if self.name in filter['names']:
                     self.typeName = filter['name']
-                if 'ended' in filter and self.name in filter['ended']:
-                    self.ended = True
             elif filter['type'] == 'folder':
                 for folder in filter['folders']:
                     if self.fullPath.startswith(folder):
                         self.typeName = filter['name']
                         break
-                if 'ended' in filter and self.name in filter['ended']:
-                    self.ended = True
             elif filter['type'] == 'tankobon':
                 if self.isTankobon:
                     self.typeName = filter['name']
-                if 'ended' in filter and self.name in filter['ended']:
-                    self.ended = True
             elif filter['type'] == 'series':
                 if self.isSeries:
                     self.typeName = filter['name']
-                if 'ended' in filter and self.name in filter['ended']:
-                    self.ended = True
             if self.typeName:
                 break
 
