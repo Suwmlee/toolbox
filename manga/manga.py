@@ -28,14 +28,18 @@ def moveManga(config):
                 print("[x] 忽略群晖文件夹")
                 continue
             full = os.path.join(src, entry)
-
+    
+            print(f"[!] anlaysis: {entry}")
             mangaInfo = MangaInfo(full)
             if mangaInfo.isManga:
                 mangaInfo.analysisManga(config)
+                print(f"[-] anlaysis: 类型 {mangaInfo.typeName} 完结 {mangaInfo.ended}")
             else:
+                print("[-] anlaysis: 非漫画")
                 continue
 
             if mangaInfo.keepTag:
+                print(f"[-] anlaysis: 不移动，跳过")
                 continue
             else:
                 modified = moveMangaChapterList(mangaInfo)
@@ -64,7 +68,7 @@ def moveMangaChapterList(mangaInfo: MangaInfo):
     modifiedManga = dict()
 
     manganame = updateMangaName(mangaInfo.name)
-    if mangaInfo.isTanbokon:
+    if mangaInfo.isTankobon:
         # 单本 将第一章节直接输出为漫画目录即可
         sourcepath = os.path.join(mangaInfo.fullPath, mangaInfo.chapters[0])
         newpath = os.path.join(mangaInfo.dstFolder, manganame, manganame)

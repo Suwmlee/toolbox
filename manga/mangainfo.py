@@ -12,13 +12,14 @@ class MangaInfo():
         self.chapters = findMangaChapter(root)
         # 检测单本，多本
         if len(self.chapters) < 1:
+            print("[x] 无章节")
             self.isManga = False
             return
         if checkIfTankobonByChapter(self.chapters):
-            self.isTanbokon = True
+            self.isTankobon = True
             self.isSeries = False
         else:
-            self.isTanbokon = False
+            self.isTankobon = False
             self.isSeries = True
 
     def initExtra(self):
@@ -35,32 +36,34 @@ class MangaInfo():
 
     def analysisMangaType(self, config):
         """ 
-        type: name, folder, tanbokon, series
+        type: name, folder, tankobon, series
         """
         # 从上往下依次判断
         for filter in config['filters']:
             if filter['type'] == 'name':
                 if self.name in filter['names']:
                     self.typeName = filter['name']
-                if self.name in filter['ended']:
+                if 'ended' in filter and self.name in filter['ended']:
                     self.ended = True
             elif filter['type'] == 'folder':
                 for folder in filter['folders']:
                     if self.fullPath.startswith(folder):
                         self.typeName = filter['name']
                         break
-                if self.name in filter['ended']:
+                if 'ended' in filter and self.name in filter['ended']:
                     self.ended = True
-            elif filter['type'] == 'tanbokon':
-                if self.isTanbokon:
+            elif filter['type'] == 'tankobon':
+                if self.isTankobon:
                     self.typeName = filter['name']
-                if self.name in filter['ended']:
+                if 'ended' in filter and self.name in filter['ended']:
                     self.ended = True
             elif filter['type'] == 'series':
                 if self.isSeries:
                     self.typeName = filter['name']
-                if self.name in filter['ended']:
+                if 'ended' in filter and self.name in filter['ended']:
                     self.ended = True
+            if self.typeName:
+                break
 
     def queryMangaMapping(self, config):
         """ 查询漫画映射

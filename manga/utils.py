@@ -51,7 +51,7 @@ def checkIfTankobonByChapter(chapters):
         raise ValueError("未检测到章节")
     elif len(chapters) < 2:
         if chapters[0] == '_单章节' or chapters[0] == '单章节':
-            print("是单本漫画")
+            # print("是单本漫画")
             isTankobon = True
         elif chapters[0] == '_Ch. 1' or chapters[0] == 'Ch. 1':
             print("可能是单本漫画,目前只有一个章节")
