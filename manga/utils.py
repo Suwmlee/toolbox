@@ -96,14 +96,10 @@ def zipfolder(srcfolder, destfile):
 def replaceParentheses(basestr: str):
     """ 替换特殊符号
     """
-    if '（' in basestr:
-        basestr = basestr.replace('（', '(')
-    if '）' in basestr:
-        basestr = basestr.replace('）', ')')
-    if '【' in basestr:
-        basestr = basestr.replace('【', '[')
-    if '】' in basestr:
-        basestr = basestr.replace('】', ']')
+    basestr = basestr.replace('（', '(')
+    basestr = basestr.replace('）', ')')
+    basestr = basestr.replace('【', '[')
+    basestr = basestr.replace('】', ']')
     return basestr
 
 
@@ -142,15 +138,3 @@ def regexMatch(basename, reg):
     return result
 
 
-def replaceParentheses(basestr: str):
-    """ 替换特殊符号
-    """
-    if '（' in basestr:
-        basestr = basestr.replace('（', '(')
-    if '）' in basestr:
-        basestr = basestr.replace('）', ')')
-    if '【' in basestr:
-        basestr = basestr.replace('【', '[')
-    if '】' in basestr:
-        basestr = basestr.replace('】', ']')
-    return basestr
