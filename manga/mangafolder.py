@@ -270,7 +270,11 @@ def updateMangaName(orignal):
     results = regexMatch(name, '\[(.*?)\]')
     if results:
         retagname = name
-        sorts = ['汉化', '漢化', '無碼', '全彩', '薄碼', '個人', '无修正']
+        sorts = ['汉化', '漢化', '無碼', '全彩', '薄碼', '個人', '无修正', 'Chinese', '连载中', '完结']
+        writer = results[0]
+        if not writer in sorts:
+            retagname = retagname.replace('[' + writer + ']', '')
+            retagname = '[' + writer + '] ' + retagname
         retags = []
         for tag in results:
             for s in sorts:
@@ -280,7 +284,7 @@ def updateMangaName(orignal):
             retagname = retagname.replace('['+stag+']', '')
             retagname = retagname + '[' + stag.strip('-_ ')+']'
         if retagname != name:
-            print(f"重新排序tag  {name} {retagname}")
+            # print(f"重新排序tag  {name} ==> {retagname}")
             name = retagname
     name = name.replace('[漢化]', '').replace('[汉化]', '')
     name = name.replace('[]', '').replace('()', '').replace('] [', '][').strip()
