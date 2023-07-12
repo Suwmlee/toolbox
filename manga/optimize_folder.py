@@ -416,11 +416,11 @@ if __name__ == "__main__":
     if TEST_MODE:
         print("当前处于测试模式")
 
-    if config['tachiyomi']['enable']:
-        for tachi in config['tachiyomi']['mapping']:
-            src = tachi['src']
-            dst = tachi['dst']
-            tachiyomiManage(src, dst)
+    # if config['tachiyomi']['enable']:
+    #     for tachi in config['tachiyomi']['mapping']:
+    #         src = tachi['src']
+    #         dst = tachi['dst']
+    #         tachiyomiManage(src, dst)
 
     if config['komgalib']['enable']:
         for komgalib in config['komgalib']['libraries']:
