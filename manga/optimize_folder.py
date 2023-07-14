@@ -388,8 +388,6 @@ def komgaMangaLib(libfolder):
                 else:
                     chapter = mangazipname
                     print(f"可能是多章节漫画  {manganame}  --- {chapter}")
-        if author:
-            author = '[' + author + ']'
         if manganame:
             manganame = updateMangaName(manganame)
         if chapter:
