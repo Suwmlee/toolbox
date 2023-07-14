@@ -68,7 +68,8 @@ def renamefile(src, dst):
             os.makedirs(dir)
         shutil.move(src, dst)
     else:
-        raise ValueError(f"重命名 源文件不存在 {src}")
+        message = "重命名 源文件不存在 {0}".format(src)
+        raise ValueError(message)
 
 
 def zipfolder(srcfolder, destfile):
