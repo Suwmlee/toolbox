@@ -151,9 +151,7 @@ def updateChapter(orignal: str):
 
 if __name__ == "__main__":
 
-    localPath = os.path.dirname(os.path.abspath(__file__))
-    configPath = os.path.join(localPath, 'manga.yaml')
-    config = loadConfig(configPath)
+    config = loadConfig()
 
     DEBUG_MODE = config['dry-run']
 

@@ -6,11 +6,15 @@ import zipfile
 from yaml import load  # pip install pyyaml
 
 
-def loadConfig(configPath):
+def loadConfig(configPath = ""):
     try:
         from yaml import CLoader as Loader
     except ImportError:
         from yaml import Loader
+
+    if configPath == "":
+        localPath = os.path.dirname(os.path.abspath(__file__))
+        configPath = os.path.join(localPath, 'manga.yaml')
     data = None
     with open(configPath, mode="r", encoding="utf8") as c:
         data = load(c.read(), Loader=Loader)
@@ -129,13 +133,4 @@ def cleanFolderWithoutSuffix(folder, suffix):
         print(f"删除无匹配后缀文件目录 [{folder}]")
         shutil.rmtree(folder)
     return hassuffix
-
-
-def regexMatch(basename, reg):
-    """ 正则过滤
-    """
-    prog = re.compile(reg, re.IGNORECASE | re.X | re.S)
-    result = prog.findall(basename)
-    return result
-
 

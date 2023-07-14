@@ -13,19 +13,7 @@ import os
 import re
 import shutil
 import zipfile
-from yaml import load  # pip install pyyaml
-
-
-def loadConfig():
-    try:
-        from yaml import CLoader as Loader
-    except ImportError:
-        from yaml import Loader
-    localPath = os.path.dirname(os.path.abspath(__file__))
-    data = None
-    with open(os.path.join(localPath, 'manga.yaml'), mode="r", encoding="utf8") as c:
-        data = load(c.read(), Loader=Loader)
-    return data
+from utils import loadConfig
 
 
 def finadAllFiles(root, escape_folder: list = None):
