@@ -408,7 +408,7 @@ if __name__ == "__main__":
     #         dst = tachi['dst']
     #         tachiyomiManage(src, dst)
 
-    if config['komgalib']['enable']:
-        for komgalib in config['komgalib']['libraries']:
-            komgaMangaLib(komgalib)
-            cleanFolderWithoutSuffix(komgalib, MANGA_TYPE)
+    if config['optimize-folder']['enable']:
+        for folder in config['optimize-folder']['folders']:
+            komgaMangaLib(folder)
+            cleanFolderWithoutSuffix(folder, MANGA_TYPE)
