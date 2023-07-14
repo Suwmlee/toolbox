@@ -7,3 +7,5 @@ __pycache__/
 *.log
 *.yaml
 !*.template.yaml
+
+.vscode
