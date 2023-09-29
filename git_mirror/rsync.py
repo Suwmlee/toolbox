@@ -2,12 +2,13 @@
 import os
 import re
 import subprocess
-
+import  random
+from datetime import datetime
 
 def command(cmd, cwd=os.getcwd()):
     """ run command in specific directory
     """
-    os.environ["COMSPEC"] = 'powershell'
+    os.environ["COMSPEC"] = "powershell"
     p = subprocess.Popen(cmd, cwd=cwd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     output, errors = p.communicate()
     if len(output) == 0 and len(errors) > 0:
@@ -15,25 +16,19 @@ def command(cmd, cwd=os.getcwd()):
     else:
         ret = output
     try:
-        lines = ret.decode('gb2312')
+        lines = ret.decode("gb2312")
     except:
         try:
-            lines = ret.decode('utf8')
+            lines = ret.decode("utf8")
         except:
-            lines = ''
+            lines = ""
     return lines
 
 
-def regexMatch(basename, reg):
-    prog = re.compile(reg, re.IGNORECASE | re.X | re.S)
-    result = prog.findall(basename)
-    return result
-
-
 def getOriginBranches(repo_folder):
-    """ 获取仓库地址内所有 origin 的分支
+    """ get remote repo branches
     """
-    out = command('git branch -r ', repo_folder)
+    out = command("git branch -r ", repo_folder)
     lines = out.splitlines()
     branches = []
     for br in lines:
@@ -46,32 +41,38 @@ def getOriginBranches(repo_folder):
     return branches
 
 
-def detect_forceupdate():
-    """
-#!/bin/sh
-if [ "$1" == "prepared" ]
-then
-  while read -r line
-   do
-        #only protect the master / main branch (must be specified which branches to protect)
-        ([[ ! "$line" =~ refs\/head\/master$ ]] && [[ ! "$line" =~ refs\/head\/main$ ]]) && continue
-        count=$(git rev-list --abbrev-commit $(echo $line|cut -d " " -f 1) ^$(echo $line|cut -d " " -f 2) | wc -l)
-        if [ $count -ne 0 ]
-        then
-                echo $(date) forced update detected in $PWD >> ~/forcedupdates.log
-                exit 1
-        fi
-  done
-fi
-    """
-    print("detect")
+def start(root):
+    remotes = command("git remote -v", root)
+    if "not a git repository" in remotes:
+        print(f"!!!!!!! not a git repository !!!!!!!")
+        return False
+    branches = getOriginBranches(root)
+    for branch in branches:
+        if "_mirror_" in branch:
+            print("this is a mirror branch, pass...")
+            continue
+        command(f"git checkout {branch} ", f)
+        # detect force-update
+        out = command("git rev-list --abbrev-commit HEAD ^origin", root)
+        if len(out) > 0:
+            print("detect force update")
+            # create mirror branch
+            new_branch = branch + "_mirror_" + datetime.now().strftime("%Y%m%d%H%M%S") + "_" + str(random.randint(0, 100))
+            command(f"git checkout -b {new_branch} {branch}", root)
+            command(f"git checkout {branch} ", f)
 
-    # 获取 origin 分支内的提交记录，从 upstream hex 开始
-    # git rev-list --abbrev-commit origin ^upstream
-    # 如果有记录，则说明 upstream 低于 origin。则推测为 forced update
-    # 存疑，如果撤销后又有新增，是否可以处理？
-
+        command(f"git reset --hard origin/{branch}", f)
+        out2 = command(f"git pull origin", f)
+        print(out2)
+        print(f"{branch} updated ...")
 
 if __name__ == "__main__":
 
-    root = "E:\\Gitlab\\backup"
+    root = "/volume1/iCloud/Gitea/mirror"
+    dirs = os.listdir(root)
+    for entry in dirs:
+        f = os.path.join(root, entry)
+        if os.path.isdir(f):
+            print("====================")
+            print(f"check {entry}...")
+            start(f)
