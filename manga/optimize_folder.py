@@ -13,7 +13,7 @@ import os
 import re
 import shutil
 import zipfile
-from utils import loadConfig
+from utils import loadConfig, zipfolder, replaceParentheses, regexMatch
 
 
 def finadAllFiles(root, escape_folder: list = None):
@@ -55,30 +55,6 @@ def cleanFolderWithoutSuffix(folder, suffix):
     return hassuffix
 
 
-def zipfolder(srcfolder, destfile):
-    """ 压缩 `srcfolder` 目录下的文件到 `destfile`
-    :param srcfolder: 需要压缩的目录,仅压缩此目录下的文件,不会深层压缩
-    """
-    if TEST_MODE:
-        return
-    destfolder = os.path.dirname(destfile)
-    if not os.path.exists(destfolder):
-        os.makedirs(destfolder)
-    if not os.path.exists(destfile):
-        z = zipfile.ZipFile(destfile, 'w', zipfile.ZIP_DEFLATED)
-        dirs = os.listdir(srcfolder)
-        for dir in dirs:
-            filepath = os.path.join(srcfolder, dir)
-            if os.path.isdir(filepath):
-                continue
-            if dir == '.nomedia':
-                continue
-            z.write(filepath, filepath)
-        z.close()
-    else:
-        print(f"跳过压缩: 已存在压缩文件 [{destfile}]")
-
-
 def renamefile(src, dst):
     """ 移动文件
     """
@@ -91,28 +67,6 @@ def renamefile(src, dst):
         shutil.move(src, dst)
     else:
         raise ValueError(f"重命名 源文件不存在 {src}")
-
-
-def replaceParentheses(basestr: str):
-    """ 替换特殊符号
-    """
-    if '（' in basestr:
-        basestr = basestr.replace('（', '(')
-    if '）' in basestr:
-        basestr = basestr.replace('）', ')')
-    if '【' in basestr:
-        basestr = basestr.replace('【', '[')
-    if '】' in basestr:
-        basestr = basestr.replace('】', ']')
-    return basestr
-
-
-def regexMatch(basename, reg):
-    """ 正则过滤
-    """
-    prog = re.compile(reg, re.IGNORECASE | re.X | re.S)
-    result = prog.findall(basename)
-    return result
 
 
 def zipFolder(source):
@@ -183,7 +137,8 @@ def tachiyomiManage(src, dst):
                     print(f"已经存在cbz文件,直接移动 {cbzfile} 到 {dest}")
                     renamefile(cbzfile, dest)
                 else:
-                    zipfolder(key, dest)
+                    if not TEST_MODE:
+                        zipfolder(key, dest)
             print(f"整理完成! {full} \n")
 
 
