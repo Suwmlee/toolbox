@@ -4,7 +4,7 @@
 import argparse
 import os
 from mangainfo import MangaInfo
-from utils import fix_series, fix_tankobon, loadConfig, zip_type, renamefile, zipfolder
+from utils import fix_series, fix_tankobon, loadConfig, renamefile, zipfolder
 
 TEST_MODE = True
 
@@ -64,23 +64,26 @@ def organize_manga(root, dst_folder):
             source = key
             dest = modified.get(key) + '.zip'
             is_zip = False
-            for ztype in zip_type:
+            # 大小写敏感
+            for ztype in ['.zip', '.cbz', '.pdf', '.PDF']:
                 if os.path.exists(key + ztype):
                     source = key + ztype
                     dest = modified.get(key) + ztype
                     is_zip = True
                     break
-
-            if TEST_MODE:
-                print(f"[!] 测试模式： {source} 到 {dest}")
+            if is_zip:
+                if source == dest:
+                    continue
+                if TEST_MODE:
+                    print(f"[!] 测试模式： {source} 到 {dest}")
+                    continue
+                print(f"[-] 是压缩文件,直接移动到 {dest}")
+                renamefile(source, dest)
             else:
-                if is_zip:
-                    if source == dest:
-                        continue
-                    print(f"[-] 是压缩文件,直接移动到 {dest}")
-                    renamefile(source, dest)
-                else:
-                    zipfolder(source, dest)
+                if TEST_MODE:
+                    print(f"[!] 测试模式： {source} 到 {dest}")
+                    continue
+                zipfolder(source, dest)
         print("[-] 整理完成!\n")
 
 
