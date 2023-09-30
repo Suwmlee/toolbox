@@ -4,7 +4,7 @@
 import argparse
 import os
 from mangainfo import MangaInfo
-from utils import fix_series, fix_tankobon, loadConfig, renamefile, zipfolder
+from utils import fix_series, fix_tankobon, loadConfig, zip_type, renamefile, zipfolder
 
 TEST_MODE = True
 
@@ -26,15 +26,17 @@ def organize(config):
 
             if depth == 1:
                 print(f"[+] 分析: {full}")
-                # organize_manga(full, src)
+                organize_manga(full, src)
             elif depth == 2:
-                print("[!] 两级目录,可能含有作者层级")
+                print(f"[+] 两级目录,可能含有作者层级: {full}")
                 deps = os.listdir(full)
                 for ent in deps:
-                    absfull = os.path.join(full, ent)
-                    print(f"[+] 两级目录: {absfull}")
+                    print(f"[-] 两级目录: {ent}")
+                    absf = os.path.join(full, ent)
+                    organize_manga(absf, full)
             else:
-                print("[!] 超过三个层级")
+                print(f"[!] 超过三个层级 {full}")
+                print(f"[!] 超过三个层级 {full}")
 
 
 def get_depth(path, depth=0):
@@ -57,18 +59,28 @@ def organize_manga(root, dst_folder):
         if not modified:
             print("[-] 跳过... \n")
             return
-        print("[-] 开始压缩...")
+        # print("[-] 开始移动...")
         for key in modified.keys():
-            cbzfile = key + '.cbz'
+            source = key
             dest = modified.get(key) + '.zip'
+            is_zip = False
+            for ztype in zip_type:
+                if os.path.exists(key + ztype):
+                    source = key + ztype
+                    dest = modified.get(key) + ztype
+                    is_zip = True
+                    break
+
             if TEST_MODE:
-                print(f"[!] 测试模式： {cbzfile} 到 {dest}")
+                print(f"[!] 测试模式： {source} 到 {dest}")
             else:
-                if os.path.exists(cbzfile):
-                    print(f"[-] 已经存在cbz文件,直接移动 {cbzfile} 到 {dest}")
-                    renamefile(cbzfile, dest)
+                if is_zip:
+                    if source == dest:
+                        continue
+                    print(f"[-] 是压缩文件,直接移动到 {dest}")
+                    renamefile(source, dest)
                 else:
-                    zipfolder(key, dest)
+                    zipfolder(source, dest)
         print("[-] 整理完成!\n")
 
 
@@ -90,5 +102,12 @@ if __name__ == "__main__":
     parser.add_argument('-t', '--test', action='store_true', help='测试模式')
     parser.add_argument('-f', '--force', action='store_true', help='强制移动')
     args = parser.parse_args()
+
+    if args.test:
+        TEST_MODE = True
+    else:
+        TEST_MODE = config['dry-run']
+    if args.force:
+        TEST_MODE = False
 
     organize(config['organize-manga'])

@@ -5,6 +5,7 @@ import shutil
 import zipfile
 from yaml import load  # pip install pyyaml
 
+zip_type = ['.zip', '.cbz', '.pdf']
 
 def loadConfig(configPath = ""):
     try:
@@ -40,7 +41,7 @@ def findMangaChapter(root):
         if os.path.isdir(full):
             chapters.append(entry)
         else:
-            if entry.endswith('.cbz'):
+            if entry.lower().endswith(tuple(zip_type)):
                 # print("漫画目录已经是压缩文件")
                 chapter = os.path.splitext(entry)[0]
                 chapters.append(chapter)
@@ -66,6 +67,8 @@ def checkIfTankobonByChapter(chapters):
 def renamefile(src, dst):
     """ 移动文件
     """
+    if src == dst:
+        return
     if os.path.exists(src):
         dir = os.path.dirname(dst)
         if not os.path.exists(dir):
