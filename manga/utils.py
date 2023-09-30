@@ -198,3 +198,30 @@ def updateChapter(orignal: str):
     else:
         # print(f"不需要更新 {orignal} 可能是特殊情况")
         return orignal
+
+
+def fix_tankobon(root, name, chapters, groups, badtags, dstfolder):
+    """ 修复单本漫画目录
+    修正漫画名字, key为源文件, value为修复后文件地址
+    """
+    result = dict()
+    manganame = updateMangaName(name, groups, badtags)
+    sourcepath = os.path.join(root, chapters[0])
+    dstpath = os.path.join(dstfolder, manganame, manganame)
+    print(f"[-] 单本漫画整理:  {chapters[0]} >>> {manganame}")
+    result[sourcepath] = dstpath
+    return result
+
+
+def fix_series(root, name, chapters, groups, badtags, dstfolder):
+    """ 修复系列漫画目录
+    修正漫画名字, key为源文件, value为修复后文件地址
+    """
+    result = dict()
+    manganame = updateMangaName(name, groups, badtags)
+    for ch in chapters:
+        newch = updateChapter(ch)
+        oldpath = os.path.join(root, ch)
+        newpath = os.path.join(dstfolder, manganame, newch)
+        result[oldpath] = newpath
+    return result

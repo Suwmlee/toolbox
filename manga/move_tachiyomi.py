@@ -3,9 +3,8 @@
 
 import argparse
 import os
-import re
 from mangainfo import MangaInfo
-from utils import loadConfig, renamefile, zipfolder, updateChapter, updateMangaName
+from utils import fix_series, fix_tankobon, loadConfig, renamefile, zipfolder
 
 TEST_MODE = True
 
@@ -65,23 +64,12 @@ def moveManga(config):
 def moveMangaChapterList(mangaInfo: MangaInfo, config):
     """ 获取移动的章节列表
     """
-    # 修正漫画名字
-    modifiedManga = dict()
-
-    manganame = updateMangaName(mangaInfo.name, config['groups'], config['tags'])
     if mangaInfo.isTankobon:
-        # 单本 将第一章节直接输出为漫画目录即可
-        sourcepath = os.path.join(mangaInfo.fullPath, mangaInfo.chapters[0])
-        newpath = os.path.join(mangaInfo.dstFolder, manganame, manganame)
-        print(f"[-] 单本漫画整理:  {mangaInfo.chapters[0]} >>> {manganame}")
-        modifiedManga[sourcepath] = newpath
+        return fix_tankobon(mangaInfo.fullPath, mangaInfo.name, mangaInfo.chapters,
+                            config['groups'], config['tags'], mangaInfo.dstFolder)
     else:
-        for ch in mangaInfo.chapters:
-            newch = updateChapter(ch)
-            oldpath = os.path.join(mangaInfo.fullPath, ch)
-            newpath = os.path.join(mangaInfo.dstFolder, manganame, newch)
-            modifiedManga[oldpath] = newpath
-    return modifiedManga
+        return fix_series(mangaInfo.fullPath, mangaInfo.name, mangaInfo.chapters,
+                          config['groups'], config['tags'], mangaInfo.dstFolder)
 
 
 if __name__ == "__main__":
