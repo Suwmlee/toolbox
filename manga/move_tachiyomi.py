@@ -30,36 +30,36 @@ def moveManga(config):
                 continue
             full = os.path.join(src, entry)
     
-            print(f"[!] anlaysis: {entry}")
+            print(f"[+] 分析: {entry}")
             mangaInfo = MangaInfo(full)
             if mangaInfo.isManga:
                 mangaInfo.analysisManga(config)
-                print(f"[-] anlaysis: 类型 {mangaInfo.typeName} 完结 {mangaInfo.ended}")
+                print(f"[-] 类型 {mangaInfo.typeName} 完结 {mangaInfo.ended}")
             else:
-                print("[-] anlaysis: 非漫画")
+                print("[-] 非漫画\n")
                 continue
 
             if mangaInfo.keepTag:
-                print(f"[-] anlaysis: 不移动，跳过")
+                print(f"[-] 不移动，跳过\n")
                 continue
             else:
                 modified = moveMangaChapterList(mangaInfo)
                 if not modified:
-                    print("跳过... \n")
+                    print("[-] 跳过... \n")
                     continue
-                print("开始压缩...")
+                print("[-] 开始压缩...")
                 for key in modified.keys():
                     cbzfile = key + '.cbz'
                     dest = modified.get(key) + '.zip'
                     if TEST_MODE:
-                        print(f"测试模式： {cbzfile} 到 {dest}")
+                        print(f"[!] 测试模式： {cbzfile} 到 {dest}")
                     else:
                         if os.path.exists(cbzfile):
-                            print(f"已经存在cbz文件,直接移动 {cbzfile} 到 {dest}")
+                            print(f"[-] 已经存在cbz文件,直接移动 {cbzfile} 到 {dest}")
                             renamefile(cbzfile, dest)
                         else:
                             zipfolder(key, dest)
-                print(f"整理完成! {full} \n")
+                print("[-] 整理完成!\n")
 
 
 def moveMangaChapterList(mangaInfo: MangaInfo):
@@ -73,7 +73,7 @@ def moveMangaChapterList(mangaInfo: MangaInfo):
         # 单本 将第一章节直接输出为漫画目录即可
         sourcepath = os.path.join(mangaInfo.fullPath, mangaInfo.chapters[0])
         newpath = os.path.join(mangaInfo.dstFolder, manganame, manganame)
-        print(f"单本漫画整理:  {mangaInfo.chapters[0]} >>> {manganame}")
+        print(f"[-] 单本漫画整理:  {mangaInfo.chapters[0]} >>> {manganame}")
         modifiedManga[sourcepath] = newpath
     else:
         for ch in mangaInfo.chapters:
@@ -108,14 +108,14 @@ def updateMangaName(orignal):
             retagname = retagname.replace('['+stag+']', '')
             retagname = retagname + '[' + stag.strip('-_ ')+']'
         if retagname != name:
-            print(f"重新排序tag  {name} {retagname}")
+            print(f"[-] 重新排序tag  {name} {retagname}")
             name = retagname
     name = name.replace('[漢化]', '').replace('[汉化]', '')
     name = name.replace('[]', '').replace('()', '').replace('] [', '][').strip()
     # 多空格合并
     name = ' '.join(name.split())
     if name != orignal:
-        print(f"更新漫画名: {orignal} >>> {name}")
+        print(f"[-] 更新漫画名: {orignal} >>> {name}")
     return name
 
 
@@ -123,8 +123,8 @@ def updateChapter(orignal: str):
     """ 更新章节名
     """
     if orignal.startswith('_第1話'):
-        print("第一话 空格后跟随整个漫画名 需要特殊处理")
-        print(f"章节更新:  {orignal} >>> 1 ")
+        print("[-] 第一话 空格后跟随整个漫画名 需要特殊处理")
+        print(f"[-] 章节更新:  {orignal} >>> 1 ")
         return '1'
     elif ' ' in orignal:
         newch = orignal
@@ -134,16 +134,16 @@ def updateChapter(orignal: str):
         newch = newch.replace(' - ', ' ')
         results = regexMatch(newch, '第[\d]*話')
         if results:
-            print("章节存在特殊情况 第xxx話")
+            print("[-] 章节存在特殊情况 第xxx話")
             num = results[0].strip('第話')
             newch = newch.replace(results[0], num)
             tmps = newch.split(' ')
             if len(tmps) > 1 and tmps[0].isdigit() and tmps[1].isdigit():
-                print("开头为两个数字 剔除 `第xxx話 第xxx話` `第xxx話 xxx` ")
+                print("[-] 开头为两个数字 剔除 `第xxx話 第xxx話` `第xxx話 xxx` ")
                 newch = newch[newch.index(' '):].strip()
         newch = newch.strip('-_')
         if orignal != newch:
-            print(f"章节更新:  {orignal} >>> {newch}")
+            print(f"[-] 章节更新:  {orignal} >>> {newch}")
         return newch
     else:
         # print(f"不需要更新 {orignal} 可能是特殊情况")
