@@ -3,6 +3,7 @@
 
 import argparse
 import os
+from komgaapi import KomgaApi
 from mangainfo import MangaInfo
 from utils import fix_series, fix_tankobon, loadConfig, renamefile, zipfolder
 
@@ -114,3 +115,13 @@ if __name__ == "__main__":
         TEST_MODE = False
 
     organize(config['organize-manga'])
+
+    if not TEST_MODE:
+        libconfig = config['komgalib']
+        domain = libconfig['domain']
+        cookies = libconfig['cookies']
+        api = KomgaApi(domain, cookies)
+        libs = api.get_library()
+        # 重新扫描所有库
+        for lib in libs:
+            api.scan_lib(lib['id'])
