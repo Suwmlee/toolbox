@@ -134,3 +134,67 @@ def cleanFolderWithoutSuffix(folder, suffix):
         shutil.rmtree(folder)
     return hassuffix
 
+
+def updateMangaName(orignal, groups, badtags):
+    """ 更新漫画名
+    """
+    # print(f"原始漫画名: {orignal}")
+    name = replaceParentheses(orignal)
+    replaces = groups
+    for r in replaces:
+        name = name.replace(r, '')
+    name = re.sub('C\d{2}', '', name, re.IGNORECASE)
+    # 更改[]顺序
+    results = regexMatch(name, '\[(.*?)\]')
+    if results:
+        retagname = name
+        sorts = badtags
+        retags = []
+        for tag in results:
+            for s in sorts:
+                if s in tag:
+                    retags.append(tag)
+        for stag in retags:
+            retagname = retagname.replace('['+stag+']', '')
+            retagname = retagname + '[' + stag.strip('-_ ')+']'
+        if retagname != name:
+            print(f"[-] 重新排序tag  {name} {retagname}")
+            name = retagname
+    name = name.replace('[漢化]', '').replace('[汉化]', '')
+    name = name.replace('[]', '').replace('()', '').replace('] [', '][').strip()
+    # 多空格合并
+    name = ' '.join(name.split())
+    if name != orignal:
+        print(f"[-] 更新漫画名: {orignal} >>> {name}")
+    return name
+
+
+def updateChapter(orignal: str):
+    """ 更新章节名
+    """
+    if orignal.startswith('_第1話'):
+        print("[-] 第一话 空格后跟随整个漫画名 需要特殊处理")
+        print(f"[-] 章节更新:  {orignal} >>> 1 ")
+        return '1'
+    elif ' ' in orignal:
+        newch = orignal
+        if newch.startswith('_第') or newch.startswith('_Ch'):
+            # tachiyomi 下载格式
+            newch = newch[newch.index(' '):].strip()
+        newch = newch.replace(' - ', ' ')
+        results = regexMatch(newch, '第[\d]*話')
+        if results:
+            print("[-] 章节存在特殊情况 第xxx話")
+            num = results[0].strip('第話')
+            newch = newch.replace(results[0], num)
+            tmps = newch.split(' ')
+            if len(tmps) > 1 and tmps[0].isdigit() and tmps[1].isdigit():
+                print("[-] 开头为两个数字 剔除 `第xxx話 第xxx話` `第xxx話 xxx` ")
+                newch = newch[newch.index(' '):].strip()
+        newch = newch.strip('-_')
+        if orignal != newch:
+            print(f"[-] 章节更新:  {orignal} >>> {newch}")
+        return newch
+    else:
+        # print(f"不需要更新 {orignal} 可能是特殊情况")
+        return orignal
