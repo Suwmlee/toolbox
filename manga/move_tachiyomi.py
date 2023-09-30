@@ -1,12 +1,13 @@
 #!/bin/python3
 # -*- coding: utf-8 -*-
 
+import argparse
 import os
 import re
 from mangainfo import MangaInfo
 from utils import loadConfig, regexMatch, renamefile, replaceParentheses, zipfolder
 
-DEBUG_MODE = True
+TEST_MODE = True
 
 
 def moveManga(config):
@@ -50,7 +51,7 @@ def moveManga(config):
                 for key in modified.keys():
                     cbzfile = key + '.cbz'
                     dest = modified.get(key) + '.zip'
-                    if DEBUG_MODE:
+                    if TEST_MODE:
                         print(f"测试模式： {cbzfile} 到 {dest}")
                     else:
                         if os.path.exists(cbzfile):
@@ -150,9 +151,17 @@ def updateChapter(orignal: str):
 
 
 if __name__ == "__main__":
-
     config = loadConfig()
 
-    DEBUG_MODE = config['dry-run']
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-t', '--test', action='store_true', help='测试模式')
+    parser.add_argument('-f', '--force', action='store_true', help='强制移动')
+    args = parser.parse_args()
 
+    if args.test:
+        TEST_MODE = True
+    else:
+        TEST_MODE = config['dry-run']
+    if args.force:
+        TEST_MODE = False
     moveManga(config['tachiyomi'])
