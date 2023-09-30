@@ -83,3 +83,10 @@ class KomgaApi():
         if result.status_code == 204:
             return True
         return False
+
+    def scan_lib(self, lid):
+        """ 扫描 komga 库
+        http://localhost:25600/api/v1/libraries/xxx/scan?deep=false
+        """
+        url = '{0}/api/v1/libraries/{1}/scan?deep=false'.format(self.domain, lid)
+        requests.post(url, headers=self.headers, cookies=self.cookies)

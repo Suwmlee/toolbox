@@ -168,3 +168,7 @@ for lib in libs:
 
         libpath = libroot.replace('/data/', prefix_path)
         cleanFolderWithoutSuffix(libpath, MANGA_TYPE)
+
+# 重新扫描所有库
+for lib in libs:
+    api.scan_lib(lib['id'])
