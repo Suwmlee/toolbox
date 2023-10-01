@@ -18,7 +18,8 @@ def moveManga(config):
     -   fix name and chapter
     -   zip and move
     """
-    for src in config['sources']:
+    tachiyomi_config = config['tachiyomi']
+    for src in tachiyomi_config['sources']:
         if not os.path.exists(src):
             print(f"[!] tachiyomi: src目录异常 {src}")
             return
@@ -32,7 +33,7 @@ def moveManga(config):
             print(f"[+] 分析: {entry}")
             mangaInfo = MangaInfo(full)
             if mangaInfo.isManga:
-                mangaInfo.analysisManga(config)
+                mangaInfo.analysisManga(tachiyomi_config)
                 print(f"[-] 类型 {mangaInfo.typeName} 完结 {mangaInfo.ended}")
             else:
                 print("[-] 非漫画\n")
@@ -86,4 +87,4 @@ if __name__ == "__main__":
         TEST_MODE = config['dry-run']
     if args.force:
         TEST_MODE = False
-    moveManga(config['tachiyomi'])
+    moveManga(config)

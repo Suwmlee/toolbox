@@ -13,7 +13,8 @@ TEST_MODE = True
 def organize(config):
     """ 整理
     """
-    for src in config['folders']:
+    organize_config = config['organize-manga']
+    for src in organize_config['folders']:
         if not os.path.exists(src):
             print(f"[!] 目录异常 {src}")
             return
@@ -27,14 +28,14 @@ def organize(config):
 
             if depth == 1:
                 print(f"[+] 分析: {full}")
-                organize_manga(full, src)
+                organize_manga(full, src, config)
             elif depth == 2:
                 print(f"[+] 两级目录,可能含有作者层级: {full}")
                 deps = os.listdir(full)
                 for ent in deps:
                     print(f"[-] 两级目录: {ent}")
                     absf = os.path.join(full, ent)
-                    organize_manga(absf, full)
+                    organize_manga(absf, full, config)
             else:
                 print(f"[!] 超过三个层级 {full}")
                 print(f"[!] 超过三个层级 {full}")
@@ -49,7 +50,7 @@ def get_depth(path, depth=0):
     return maxdepth
 
 
-def organize_manga(root, dst_folder):
+def organize_manga(root, dst_folder, config):
     """ 整理单个漫画目录
     """
     mangaInfo = MangaInfo(root)
@@ -114,7 +115,7 @@ if __name__ == "__main__":
     if args.force:
         TEST_MODE = False
 
-    organize(config['organize-manga'])
+    organize(config)
 
     if not TEST_MODE:
         libconfig = config['komgalib']
