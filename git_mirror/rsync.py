@@ -8,7 +8,8 @@ from datetime import datetime
 def command(cmd, cwd=os.getcwd()):
     """ run command in specific directory
     """
-    os.environ["COMSPEC"] = "powershell"
+    if os.name == 'nt':
+        os.environ["COMSPEC"] = "powershell"
     p = subprocess.Popen(cmd, cwd=cwd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     output, errors = p.communicate()
     if len(output) == 0 and len(errors) > 0:
