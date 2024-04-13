@@ -10,7 +10,7 @@ from utils import fix_series, fix_tankobon, loadConfig, renamefile, zipfolder
 TEST_MODE = True
 
 
-def organize_manga(config):
+def start_organize(config):
     """ 整理
     """
     organize_config = config['organize-manga']
@@ -115,7 +115,7 @@ if __name__ == "__main__":
     if args.force:
         TEST_MODE = False
 
-    organize_manga(config)
+    start_organize(config)
 
     if not TEST_MODE:
         libconfig = config['komgalib']

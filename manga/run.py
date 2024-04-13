@@ -3,10 +3,8 @@
 
 
 import argparse
-import os
-from mangainfo import MangaInfo
 from transfer_manga import transfer_manga
-from organize_manga import organize_manga
+from organize_manga import start_organize
 from organize_komga import organize_komga_manga
 from utils import loadConfig
 
@@ -33,7 +31,7 @@ if __name__ == "__main__":
         transfer_manga(config)
     
     if args.organize:
-        organize_manga(config)
+        start_organize(config)
 
     if args.komga:
         organize_komga_manga(config)
