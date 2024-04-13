@@ -9,7 +9,7 @@ from utils import fix_series, fix_tankobon, loadConfig, renamefile, zipfolder
 TEST_MODE = True
 
 
-def moveManga(config):
+def transfer_manga(config):
     """
     -   load all manga folder
     -   check manga type one-by-one
@@ -87,4 +87,4 @@ if __name__ == "__main__":
         TEST_MODE = config['dry-run']
     if args.force:
         TEST_MODE = False
-    moveManga(config)
+    transfer_manga(config)
