@@ -53,6 +53,9 @@ def move2lib(path, libroot, tier):
 
 api = KomgaApi(domain, cookies)
 libs = api.get_library()
+if "error" in libs and libs["error"] == "Unauthorized":
+    print("Unauthorized")
+    exit()
 
 for lib in libs:
     libname = lib['name']
