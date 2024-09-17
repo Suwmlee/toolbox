@@ -5,7 +5,7 @@ import argparse
 import os
 from komgaapi import KomgaApi
 from mangainfo import MangaInfo
-from utils import fix_series, fix_tankobon, loadConfig, renamefile, zipfolder
+from utils import findAllMatches, fix_series, fix_tankobon, loadConfig, renamefile, zipfolder
 
 TEST_MODE = True
 
@@ -18,11 +18,8 @@ def start_organize(config):
         if not os.path.exists(src):
             print(f"[!] 目录异常 {src}")
             return
-        dirs = os.listdir(src)
+        dirs = findAllMatches(src)
         for entry in dirs:
-            if entry == '@eaDir':
-                print("[x] 忽略群晖文件夹")
-                continue
             full = os.path.join(src, entry)
             depth = get_depth(full)
 
@@ -42,7 +39,8 @@ def start_organize(config):
 
 
 def get_depth(path, depth=0):
-    if not os.path.isdir(path): return depth
+    if not os.path.isdir(path):
+        return depth
     maxdepth = depth
     for entry in os.listdir(path):
         fullpath = os.path.join(path, entry)

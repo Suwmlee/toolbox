@@ -24,6 +24,7 @@ import os
 from komgaapi import KomgaApi
 from utils import loadConfig, regexMatch, renamefile, cleanFolderWithoutSuffix
 
+
 def organize_komga_manga(config):
 
     MANGA_TYPE = config['manga-type']
@@ -47,7 +48,6 @@ def organize_komga_manga(config):
         dest_path = path.replace(libroot, dest_root)
         print(f"[!] 移动 {abspath} ====> {dest_path}")
         renamefile(abspath, dest_path)
-
 
     api = KomgaApi(domain, cookies)
     libs = api.get_library()
@@ -173,7 +173,6 @@ def organize_komga_manga(config):
     # 重新扫描所有库
     for lib in libs:
         api.scan_lib(lib['id'])
-
 
 
 if __name__ == "__main__":

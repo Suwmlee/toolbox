@@ -7,7 +7,8 @@ from yaml import load  # pip install pyyaml
 
 zip_type = ['.zip', '.cbz', '.pdf']
 
-def loadConfig(configPath = ""):
+
+def loadConfig(configPath=""):
     try:
         from yaml import CLoader as Loader
     except ImportError:
@@ -22,18 +23,32 @@ def loadConfig(configPath = ""):
     return data
 
 
+def findAllMatches(root, exclude_dict=[]):
+    """
+    匹配过滤的文件夹
+    """
+    matched = []
+    default_exclude = ['@eaDir', '_tmp', '.DS_Store', '.drive_sync']
+    default_exclude.extend(exclude_dict)
+    try:
+        dirs = os.listdir(root)
+        for entry in dirs:
+            if entry not in default_exclude:
+                matched.append(entry)
+    except FileNotFoundError:
+        print(f"Directory {root} not found.")
+    except Exception as e:
+        print(f"An error occurred: {e}")
+
+    return matched
+
+
 def findMangaChapter(root):
     """ 获取目录下的所有有效章节
     """
-    dirs = os.listdir(root)
     chapters = []
+    dirs = findAllMatches(root)
     for entry in dirs:
-        if entry == '@eaDir':
-            print("忽略群晖文件夹")
-            continue
-        if entry.endswith('_tmp'):
-            print("忽略临时文件夹")
-            continue
         full = os.path.join(root, entry)
         # 忽略 停刊公告/休刊公告/休刊通知 文件夹
         if '停刊公告' in entry or '休刊公告' in entry or '休刊通知' in entry:

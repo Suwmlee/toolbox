@@ -4,7 +4,7 @@
 import argparse
 import os
 from mangainfo import MangaInfo
-from utils import fix_series, fix_tankobon, loadConfig, renamefile, zipfolder
+from utils import findAllMatches, fix_series, fix_tankobon, loadConfig, renamefile, zipfolder
 
 TEST_MODE = True
 
@@ -23,13 +23,9 @@ def transfer_manga(config):
         if not os.path.exists(src):
             print(f"[!] tachiyomi: src目录异常 {src}")
             return
-        dirs = os.listdir(src)
+        dirs = findAllMatches(src)
         for entry in dirs:
-            if entry == '@eaDir':
-                print("[x] 忽略群晖文件夹")
-                continue
             full = os.path.join(src, entry)
-    
             print(f"[+] 分析: {entry}")
             mangaInfo = MangaInfo(full)
             if mangaInfo.isManga:
