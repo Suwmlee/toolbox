@@ -95,7 +95,7 @@ class TransferService:
         logger.info("开始处理文件...")
         self.manga_service.process_manga_files(
             path_mapping,
-            self.config.dry_run
+            self.config.debug
         )
         
         logger.info("处理完成！\n")

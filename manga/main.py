@@ -71,29 +71,13 @@ def create_parser():
         help='详细输出模式'
     )
     
-    # 操作命令（可多选）
+    # 操作命令（可多选，位置参数）
     parser.add_argument(
-        'transfer',
-        nargs='?',
-        action='store',
-        const='transfer',
-        help='从Tachiyomi转移漫画到Komga目录'
-    )
-    
-    parser.add_argument(
-        'organize',
-        nargs='?',
-        action='store',
-        const='organize',
-        help='整理漫画文件夹（优化命名和结构）'
-    )
-    
-    parser.add_argument(
-        'komga',
-        nargs='?',
-        action='store',
-        const='komga',
-        help='整理Komga库（更新元数据、按星级移动）'
+        'commands',
+        nargs='+',
+        choices=['transfer', 'organize', 'komga'],
+        metavar='COMMAND',
+        help='要执行的操作命令（可指定多个）：transfer, organize, komga'
     )
     
     return parser
@@ -103,30 +87,10 @@ def main():
     """主函数"""
     # 解析命令行参数
     parser = create_parser()
+    args = parser.parse_args()
     
-    # 特殊处理：支持多个位置参数作为命令
-    args, unknown = parser.parse_known_args()
-    
-    # 收集要执行的操作
-    actions = []
-    if args.transfer:
-        actions.append('transfer')
-    if args.organize:
-        actions.append('organize')
-    if args.komga:
-        actions.append('komga')
-    
-    # 处理未知参数，可能是操作命令
-    for arg in unknown:
-        if arg in ['transfer', 'organize', 'komga']:
-            if arg not in actions:
-                actions.append(arg)
-    
-    # 如果没有指定任何操作，显示帮助
-    if not actions:
-        parser.print_help()
-        print("\n错误: 请至少指定一个操作命令 (transfer/organize/komga)")
-        sys.exit(1)
+    # 获取要执行的操作
+    actions = args.commands
     
     try:
         # 加载配置
@@ -134,17 +98,17 @@ def main():
         
         # 设置执行模式
         if args.debug:
-            config.dry_run = True
+            config.debug = True
             logger.info("=" * 50)
             logger.info("=== 调试模式（Debug）- 不会实际修改文件 ===")
             logger.info("=" * 50)
         elif args.force:
-            config.dry_run = False
+            config.debug = False
             logger.info("=" * 50)
             logger.info("=== 强制执行模式（Force）- 将实际修改文件 ===")
             logger.info("=" * 50)
         else:
-            mode = "调试模式" if config.dry_run else "正常执行模式"
+            mode = "调试模式" if config.debug else "正常执行模式"
             logger.info("=" * 50)
             logger.info(f"=== {mode} (由配置文件决定) ===")
             logger.info("=" * 50)

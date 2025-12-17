@@ -22,18 +22,17 @@ class Config:
         with open(config_path, mode="r", encoding="utf8") as f:
             self._config = load(f.read(), Loader=Loader)
         
-        # 支持新旧配置键名（debug 优先，向后兼容 dry-run）
-        self._dry_run = self._config.get('debug', self._config.get('dry-run', True))
+        self._debug = self._config.get('debug', True)
     
     @property
-    def dry_run(self) -> bool:
+    def debug(self) -> bool:
         """是否为调试模式（True=不实际执行，False=正式执行）"""
-        return self._dry_run
+        return self._debug
     
-    @dry_run.setter
-    def dry_run(self, value: bool):
+    @debug.setter
+    def debug(self, value: bool):
         """设置调试模式"""
-        self._dry_run = value
+        self._debug = value
     
     @property
     def manga_types(self) -> list:

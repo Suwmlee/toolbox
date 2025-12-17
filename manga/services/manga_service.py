@@ -146,18 +146,18 @@ class MangaService:
         
         return result
     
-    def process_manga_files(self, path_mapping: Dict[str, str], dry_run: bool = True):
+    def process_manga_files(self, path_mapping: Dict[str, str], debug: bool = True):
         """
         处理漫画文件（压缩和移动）
         
         Args:
             path_mapping: 路径映射字典
-            dry_run: 是否为调试模式（True=不实际执行，False=正式执行）
+            debug: 是否为调试模式（True=不实际执行，False=正式执行）
         """
         for source, dest in path_mapping.items():
-            self._process_single_file(source, dest, dry_run)
+            self._process_single_file(source, dest, debug)
     
-    def _process_single_file(self, source: str, dest: str, dry_run: bool):
+    def _process_single_file(self, source: str, dest: str, debug: bool):
         """处理单个文件"""
         # 检查是否已经是压缩文件
         is_compressed = False
@@ -175,7 +175,7 @@ class MangaService:
             logger.debug(f"源和目标相同，跳过: {actual_source}")
             return
         
-        if dry_run:
+        if debug:
             logger.info(f"[调试模式] {actual_source} -> {actual_dest}")
             return
         

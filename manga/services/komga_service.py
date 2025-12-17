@@ -264,7 +264,7 @@ class KomgaService:
         dest_root = lib_path + tier
         dest_path = path.replace(lib_root, dest_root)
         
-        if not self.config.dry_run:
+        if not self.config.debug:
             logger.info(f"移动到等级目录: {abs_path} -> {dest_path}")
             rename_file(abs_path, dest_path)
         else:
@@ -311,7 +311,7 @@ class KomgaService:
             abs_path = path.replace('/data/', prefix_path)
             new_abs_path = new_path.replace('/data/', prefix_path)
             
-            if not self.config.dry_run:
+            if not self.config.debug:
                 logger.info(f"调整作者目录: {abs_path} -> {new_abs_path}")
                 rename_file(abs_path, new_abs_path)
             else:
