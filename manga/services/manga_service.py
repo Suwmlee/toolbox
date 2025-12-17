@@ -4,11 +4,11 @@
 """
 import os
 from typing import Dict, Optional
-from ..core.config import Config
-from ..core.logger import logger
-from ..models.manga_info import MangaInfo
-from ..utils.file_utils import find_manga_chapters, rename_file, zip_folder
-from ..utils.name_utils import update_manga_name, update_chapter_name
+from core.config import Config
+from core.logger import logger
+from models.manga_info import MangaInfo
+from utils.file_utils import find_manga_chapters, rename_file, zip_folder
+from utils.name_utils import update_manga_name, update_chapter_name
 
 
 class MangaService:

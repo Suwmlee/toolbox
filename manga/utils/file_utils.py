@@ -6,8 +6,8 @@ import os
 import shutil
 import zipfile
 from typing import List
-from ..core.constants import DEFAULT_EXCLUDE, SPECIAL_CHAPTERS, ZIP_TYPES
-from ..core.logger import logger
+from core.constants import DEFAULT_EXCLUDE, SPECIAL_CHAPTERS, ZIP_TYPES
+from core.logger import logger
 
 
 def find_all_matches(root: str, exclude_list: List[str] = None) -> List[str]:

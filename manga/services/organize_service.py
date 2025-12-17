@@ -3,10 +3,10 @@
 漫画整理服务
 """
 import os
-from ..core.config import Config
-from ..core.logger import logger
-from ..utils.file_utils import find_all_matches, get_folder_depth
-from .manga_service import MangaService
+from core.config import Config
+from core.logger import logger
+from utils.file_utils import find_all_matches, get_folder_depth
+from services.manga_service import MangaService
 
 
 class OrganizeService:

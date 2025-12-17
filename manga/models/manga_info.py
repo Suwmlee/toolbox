@@ -39,7 +39,7 @@ class MangaInfo:
     
     def _detect_manga_type(self):
         """检测漫画类型（单本/系列）"""
-        from ..core.constants import SINGLE_CHAPTER_NAMES
+        from core.constants import SINGLE_CHAPTER_NAMES
         
         if len(self.chapters) < 2:
             if self.chapters[0] in SINGLE_CHAPTER_NAMES:

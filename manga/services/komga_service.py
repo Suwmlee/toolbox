@@ -3,11 +3,11 @@
 Komga服务
 """
 import os
-from ..core.config import Config
-from ..core.logger import logger
-from ..api.komga_api import KomgaApi
-from ..utils.file_utils import rename_file, clean_empty_folders
-from ..utils.name_utils import parse_tags_from_name
+from core.config import Config
+from core.logger import logger
+from api.komga_api import KomgaApi
+from utils.file_utils import rename_file, clean_empty_folders
+from utils.name_utils import parse_tags_from_name
 
 
 class KomgaService:

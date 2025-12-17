@@ -4,7 +4,7 @@
 """
 import re
 from typing import List, Tuple
-from ..core.logger import logger
+from core.logger import logger
 
 
 def replace_parentheses(text: str) -> str:
