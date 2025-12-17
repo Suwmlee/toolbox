@@ -1,78 +1,127 @@
+# 漫画整理工具配置文件模板
+# 使用前请复制为 manga.yaml 并修改相应配置
 
-dry-run: true
+# 全局配置
+debug: true                      # 默认为调试模式，不实际执行操作（可用 --force 覆盖）
+
+# 支持的漫画文件类型
 manga-type:
-- .zip
-- .rar
-- .cbz
-- .pdf
-- .jpg
-- .png
-- .jpeg
-- .bmp
-- .gif
+  - .zip
+  - .cbz
+  - .pdf
+  - .rar
+  - .jpg
+  - .png
+  - .jpeg
+  - .bmp
+  - .gif
 
+# Tachiyomi 转移配置
 tachiyomi:
-  enable: true
+  enable: true                   # 是否启用Tachiyomi转移功能
+  
+  # Tachiyomi下载源目录列表
   sources:
-  - /volume1/Media/ACG/Tachiyomi/xxxx (ZH)
-  - /volume1/Media/ACG/Tachiyomi/xx (ZH)
-  # 映射不同漫画类型位置
-  mapping:
-  - name: manhwa
-    # 移动类型
-    # keep 保持不动
-    # move 移动
-    default: keep
-    ended: move
-    dst: /volume1/Media/manhwa
-  - name: normal
-    default: keep
-  - name: tankobon
-    default: move
-    dst: /volume1/Media/New+
-  - name: series
-    default: keep
-    ended: move
-    dst: /volume1/Media/New+
-  - name: final
-    default: keep
-  # 筛选漫画类型
+    - /volume1/Media/ACG/Tachiyomi/Source1
+    - /volume1/Media/ACG/Tachiyomi/Source2
+  
+  # 漫画类型过滤器（从上往下匹配，匹配到即停止）
   filters:
-  - name: manhwa
-    # 过滤类型 
-    # name      文件名
-    # folder    文件夹
-    # tankobon  单本
-    # series    系列
-    type: name
-    names:
-    - xxxx
-    - xxxxxx
-    - xxxx
-    # 完结漫画在过滤基础上进行文件名过滤
-    ended:
-    - xxx
-  # 普通类型
-  - name: normal
-    type: folder
-    folders:
-    - /volume1/Media/ACG/Tachiyomi/Mangabz (ZH)
-  - name: tankobon
-    type: tankobon
-  - name: series
-    type: series
-    ended:
-    - maganame
+    # 韩漫过滤
+    - name: manhwa
+      type: name                 # 过滤类型: name(文件名), folder(文件夹), tankobon(单本), series(系列)
+      names:                     # 当type为name时，指定要匹配的漫画名列表
+        - "某韩漫名称1"
+        - "某韩漫名称2"
+      ended:                     # 完结的漫画列表
+        - "已完结的韩漫"
+    
+    # 普通漫画（按文件夹匹配）
+    - name: normal
+      type: folder
+      folders:
+        - /volume1/Media/ACG/Tachiyomi/NormalSource
+    
+    # 单本漫画
+    - name: tankobon
+      type: tankobon
+    
+    # 系列漫画
+    - name: series
+      type: series
+      ended:
+        - "已完结的系列漫画名"
+  
+  # 移动规则映射
+  mapping:
+    - name: manhwa
+      default: keep              # 默认行为: keep(保持), move(移动)
+      ended: move                # 完结后的行为
+      dst: /volume1/Media/Manhwa # 移动目标目录
+    
+    - name: normal
+      default: keep
+    
+    - name: tankobon
+      default: move
+      dst: /volume1/Media/New+
+    
+    - name: series
+      default: keep
+      ended: move
+      dst: /volume1/Media/New+
 
-komgalib:
-  enable: false
-  libraries:
-  - /volume1/Media/ACG/New+
-  - /volume1/Media/ACG/Manga
+# 漫画整理配置
+organize-manga:
+  folders:                       # 需要整理的文件夹列表
+    - /volume1/Media/ACG/ToOrganize
+    - /volume1/Media/ACG/Unsorted
 
+# 需要移除的汉化组标识
+groups:
+  - "[某某汉化组]"
+  - "(某某字幕组)"
+  - "【某某汉化】"
+
+# 标签配置（需要后置的标签）
 tags:
-- key: 汉化
-  alias:
-  - 中文
-  - 中字
-- key: 全彩
+  - key: 汉化
+    alias:
+      - 中文
+      - 中字
+      - 汉化
+  - key: 全彩
+    alias:
+      - 全彩
+      - 彩色
+  - key: 无修正
+    alias:
+      - 无修
+      - 无修正
+
+# Komga 库配置
+komgalib:
+  enable: false                  # 是否启用Komga功能
+  
+  domain: http://localhost:25600 # Komga服务地址
+  
+  # Cookie字符串（从浏览器开发者工具获取）
+  cookies: "SESSION=your_session_cookie_here"
+  
+  # 路径映射（Komga内部路径 -> 实际文件系统路径）
+  prefix-path: /volume1/Media/ACG/  # 实际路径前缀
+  lib-path: /volume1/Media/ACG/     # Komga库路径
+  
+  # 要处理的库名称列表
+  lib-names:
+    - "Manga★★★"
+    - "Manga★★★★"
+    - "Manga★★★★★"
+  
+  # 星级标签定义
+  Tier3: "★★★"
+  Tier4: "★★★★"
+  Tier5: "★★★★★"
+
+# 其他可选配置
+# ...
