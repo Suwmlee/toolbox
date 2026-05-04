@@ -9,3 +9,4 @@ __pycache__/
 !*.template.yaml
 
 .vscode
+.venv/

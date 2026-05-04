@@ -15,6 +15,7 @@ from core.logger import logger
 from services.transfer_service import TransferService
 from services.organize_service import OrganizeService
 from services.komga_service import KomgaService
+from services.hentai_service import HentaiService
 
 
 def create_parser():
@@ -40,6 +41,8 @@ def create_parser():
   # 组合操作
   %(prog)s transfer organize --debug       # 先转移后整理（调试模式）
   %(prog)s transfer organize --force       # 先转移后整理（强制执行）
+  %(prog)s hentai --debug                  # 调试模式按作者整理 H-Manga
+  %(prog)s hentai                          # 正式按作者整理 H-Manga
 
 更多信息请查看 README.md
         """
@@ -75,9 +78,9 @@ def create_parser():
     parser.add_argument(
         'commands',
         nargs='+',
-        choices=['transfer', 'organize', 'komga'],
+        choices=['transfer', 'organize', 'komga', 'hentai'],
         metavar='COMMAND',
-        help='要执行的操作命令（可指定多个）：transfer, organize, komga'
+        help='要执行的操作命令（可指定多个）：transfer, organize, komga, hentai'
     )
     
     return parser
@@ -146,6 +149,14 @@ def main():
                 service.organize_komga_manga()
                 logger.info("-" * 50)
                 logger.info(">>> Komga整理完成\n")
+            
+            elif action == 'hentai':
+                logger.info(">>> 开始执行：H-Manga 按作者整理")
+                logger.info("-" * 50)
+                service = HentaiService(config)
+                service.organize()
+                logger.info("-" * 50)
+                logger.info(">>> H-Manga 整理完成\n")
         
         logger.info("=" * 50)
         logger.info("✓ 所有任务执行完成！")
