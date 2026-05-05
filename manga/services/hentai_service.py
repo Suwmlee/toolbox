@@ -5,8 +5,8 @@ H-Manga 按作者整理服务
 源目录格式: [作者] 漫画名  (位于 H-Manga 根目录下)
 目标目录:   Hentai/Manga/<作者>/漫画名
 规则:
-  - 同一作者有 2 个或以上作品才移动
-  - 目标目录已存在对应作者文件夹则直接放入，否则创建
+  - 目标目录已存在该作者文件夹 → 无论几部，直接移入
+  - 目标目录不存在该作者       → 仅当源目录有 ≥2 部时才移入（并新建文件夹）
 """
 import os
 import re
@@ -61,29 +61,43 @@ class HentaiService:
             else:
                 no_author.append(entry)
 
-        # ── 2. 统计 ─────────────────────────────────────────────────────
-        multi = {a: works for a, works in author_works.items() if len(works) >= 2}
-        single = {a: works for a, works in author_works.items() if len(works) == 1}
+        # ── 2. 已存在的作者目录 ─────────────────────────────────────────
+        existing_authors: Set[str] = set()
+        if os.path.isdir(self.dst_dir):
+            existing_authors = set(os.listdir(self.dst_dir))
+
+        # ── 3. 决定哪些作者需要移动 ─────────────────────────────────────
+        # 已存在于目标目录：无论几部都移
+        # 不存在于目标目录：需要 ≥2 部才移
+        to_move: Dict[str, List[str]] = {}
+        skip_single: Dict[str, List[str]] = {}
+
+        for author, works in author_works.items():
+            if author in existing_authors or len(works) >= 2:
+                to_move[author] = works
+            else:
+                skip_single[author] = works
+
+        total_move_works = sum(len(w) for w in to_move.values())
+        existing_move = {a for a in to_move if a in existing_authors}
+        new_move = {a for a in to_move if a not in existing_authors}
 
         logger.info(f"源目录: {self.src_dir}")
         logger.info(f"目标目录: {self.dst_dir}")
         logger.info(f"共扫描到 {sum(len(w) for w in author_works.values())} 个带作者条目")
-        logger.info(f"  - 作者有多部作品（将移动）: {len(multi)} 位作者, {sum(len(w) for w in multi.values())} 部")
-        logger.info(f"  - 作者仅单部作品（跳过）:   {len(single)} 位作者")
+        logger.info(f"  - 将移动：{len(to_move)} 位作者，{total_move_works} 部")
+        logger.info(f"    其中目标已存在（直接放入）: {len(existing_move)} 位")
+        logger.info(f"    其中目标不存在（新建文件夹，≥2部）: {len(new_move)} 位")
+        logger.info(f"  - 跳过（目标不存在且仅单部）: {len(skip_single)} 位作者")
         if no_author:
-            logger.info(f"  - 无法识别作者（跳过）:   {len(no_author)} 个条目")
+            logger.info(f"  - 无法识别作者（跳过）: {len(no_author)} 个条目")
         logger.info("")
-
-        # ── 3. 已存在的作者目录 ─────────────────────────────────────────
-        existing_authors: Set[str] = set()
-        if os.path.isdir(self.dst_dir):
-            existing_authors = set(os.listdir(self.dst_dir))
 
         # ── 4. 打印/执行移动 ────────────────────────────────────────────
         debug = self.config.debug
         mode_tag = "[调试]" if debug else "[执行]"
 
-        for author, works in sorted(multi.items()):
+        for author, works in sorted(to_move.items()):
             author_in_dst = author in existing_authors
             status = "已存在" if author_in_dst else "新建"
             logger.info(f"作者: {author}  ({status}，共 {len(works)} 部)")
@@ -102,9 +116,9 @@ class HentaiService:
 
             logger.info("")
 
-        # ── 5. 打印跳过明细（单作品） ───────────────────────────────────
-        logger.info("── 跳过（每位作者仅一部作品）──")
-        for author, works in sorted(single.items()):
+        # ── 5. 打印跳过明细 ─────────────────────────────────────────────
+        logger.info("── 跳过（目标不存在且仅一部作品）──")
+        for author, works in sorted(skip_single.items()):
             logger.info(f"  {author}: {works[0]}")
 
         if no_author:
