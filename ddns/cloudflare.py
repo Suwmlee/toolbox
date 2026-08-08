@@ -5,9 +5,7 @@
 新建配置文件 cloudflare.ini (与本文件同目录):
 
 [cloudflare]
-email = your@gmail.com
 token = api_token
-api_key = global_api_key
 zone_id = zone_id
 # 需要更新的动态域名
 record_name = domain.com
@@ -24,6 +22,7 @@ import sys
 import os
 import re
 from configparser import ConfigParser
+from urllib.parse import quote
 
 CONFIG_PATH = os.path.join(os.path.dirname(__file__), "cloudflare.ini")
 
@@ -37,9 +36,7 @@ def load_config(path=CONFIG_PATH):
     exclude_ips = [ip.strip() for ip in section.get('exclude_ips', '').split(',') if ip.strip()]
 
     return {
-        'email': section.get('email'),
         'token': section.get('token'),
-        'api_key': section.get('api_key'),
         'zone_id': section.get('zone_id'),
         'record_name': section.get('record_name'),
         'exclude_ips': exclude_ips,
@@ -53,19 +50,16 @@ CF_Zone_ID = _cfg['zone_id']
 # 需要更新的动态域名
 CF_Record_Name = _cfg['record_name']
 # 需要排除的IP
-exclude_ips = _cfg['exclude_ips']
+Exclude_IPs = _cfg['exclude_ips']
 
-headers = {
-    'Content-Type': "application/json",
-    'X-Auth-Email': _cfg['email'],
-    'X-Auth-Key': _cfg['api_key'],
+CF_Headers = {
     'Authorization': 'Bearer ' + _cfg['token'],
 }
 
 
 def dns_list():
     conn = http.client.HTTPSConnection("api.cloudflare.com")
-    conn.request("GET", f"/client/v4/zones/{CF_Zone_ID}/dns_records", headers=headers)
+    conn.request("GET", f"/client/v4/zones/{CF_Zone_ID}/dns_records", headers=CF_Headers)
     res = conn.getresponse()
     data = res.read()
     return json.loads(data.decode("utf-8"))
@@ -74,7 +68,7 @@ def dns_list():
 # identifier: record id
 def dns_detail(record_name):
     conn = http.client.HTTPSConnection("api.cloudflare.com")
-    conn.request("GET", f"/client/v4/zones/{CF_Zone_ID}/dns_records?name={record_name}", headers=headers)
+    conn.request("GET", f"/client/v4/zones/{CF_Zone_ID}/dns_records?name.exact={quote(record_name)}", headers=CF_Headers)
     res = conn.getresponse()
     data = res.read()
     return json.loads(data.decode("utf-8"))
@@ -89,7 +83,7 @@ def dns_update(identifier, name, IP):
         "content": IP,
         "ttl": 1,
     }
-    conn.request("PUT", f"/client/v4/zones/{CF_Zone_ID}/dns_records/{identifier}", json.dumps(payload), headers)
+    conn.request("PUT", f"/client/v4/zones/{CF_Zone_ID}/dns_records/{identifier}", json.dumps(payload), CF_Headers)
     res = conn.getresponse()
     data = res.read()
     return json.loads(data.decode("utf-8"))
@@ -102,7 +96,7 @@ def dns_patch(identifier, IP):
         "ttl": 120,  # 非 auto(1) 的 ttl, 需要设置 proxied 为 False
         "proxied": False,
     }
-    conn.request("PATCH", f"/client/v4/zones/{CF_Zone_ID}/dns_records/{identifier}", json.dumps(payload), headers)
+    conn.request("PATCH", f"/client/v4/zones/{CF_Zone_ID}/dns_records/{identifier}", json.dumps(payload), CF_Headers)
     res = conn.getresponse()
     data = res.read()
     return json.loads(data.decode("utf-8"))
@@ -149,9 +143,13 @@ def main():
     initlog()
 
     my_ip = get_my_global_ip()
-    if my_ip == "0.0.0.0" or my_ip in exclude_ips:
+    if my_ip == "0.0.0.0" or my_ip in Exclude_IPs:
         log("ERROR", "获取本机公网IP失败或命中排除列表")
         return
+
+    # 测试: 获取DNS记录列表
+    # all_records = dns_list()
+    # print(all_records)
 
     detail = dns_detail(CF_Record_Name)
     if not detail['success']:
