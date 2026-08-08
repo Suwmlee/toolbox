@@ -56,65 +56,81 @@ CF_Headers = {
     'Authorization': 'Bearer ' + _cfg['token'],
 }
 
+# 网络请求超时时间(秒)，避免网络异常时脚本无限期卡死
+REQUEST_TIMEOUT = 15
+
 
 def dns_list():
-    conn = http.client.HTTPSConnection("api.cloudflare.com")
-    conn.request("GET", f"/client/v4/zones/{CF_Zone_ID}/dns_records", headers=CF_Headers)
-    res = conn.getresponse()
-    data = res.read()
-    return json.loads(data.decode("utf-8"))
+    conn = http.client.HTTPSConnection("api.cloudflare.com", timeout=REQUEST_TIMEOUT)
+    try:
+        conn.request("GET", f"/client/v4/zones/{CF_Zone_ID}/dns_records", headers=CF_Headers)
+        res = conn.getresponse()
+        data = res.read()
+        return json.loads(data.decode("utf-8"))
+    finally:
+        conn.close()
 
 
 # identifier: record id
 def dns_detail(record_name):
-    conn = http.client.HTTPSConnection("api.cloudflare.com")
-    conn.request("GET", f"/client/v4/zones/{CF_Zone_ID}/dns_records?name.exact={quote(record_name)}", headers=CF_Headers)
-    res = conn.getresponse()
-    data = res.read()
-    return json.loads(data.decode("utf-8"))
+    conn = http.client.HTTPSConnection("api.cloudflare.com", timeout=REQUEST_TIMEOUT)
+    try:
+        conn.request("GET", f"/client/v4/zones/{CF_Zone_ID}/dns_records?name.exact={quote(record_name)}", headers=CF_Headers)
+        res = conn.getresponse()
+        data = res.read()
+        return json.loads(data.decode("utf-8"))
+    finally:
+        conn.close()
 
 
 # identifier: record id
 def dns_update(identifier, name, IP):
-    conn = http.client.HTTPSConnection("api.cloudflare.com")
-    payload = {
-        "type": "A",
-        "name": name,
-        "content": IP,
-        "ttl": 1,
-    }
-    conn.request("PUT", f"/client/v4/zones/{CF_Zone_ID}/dns_records/{identifier}", json.dumps(payload), CF_Headers)
-    res = conn.getresponse()
-    data = res.read()
-    return json.loads(data.decode("utf-8"))
+    conn = http.client.HTTPSConnection("api.cloudflare.com", timeout=REQUEST_TIMEOUT)
+    try:
+        payload = {
+            "type": "A",
+            "name": name,
+            "content": IP,
+            "ttl": 1,
+        }
+        conn.request("PUT", f"/client/v4/zones/{CF_Zone_ID}/dns_records/{identifier}", json.dumps(payload), CF_Headers)
+        res = conn.getresponse()
+        data = res.read()
+        return json.loads(data.decode("utf-8"))
+    finally:
+        conn.close()
 
 
 def dns_patch(identifier, IP):
-    conn = http.client.HTTPSConnection("api.cloudflare.com")
-    payload = {
-        "content": IP,
-        "ttl": 120,  # 非 auto(1) 的 ttl, 需要设置 proxied 为 False
-        "proxied": False,
-    }
-    conn.request("PATCH", f"/client/v4/zones/{CF_Zone_ID}/dns_records/{identifier}", json.dumps(payload), CF_Headers)
-    res = conn.getresponse()
-    data = res.read()
-    return json.loads(data.decode("utf-8"))
+    conn = http.client.HTTPSConnection("api.cloudflare.com", timeout=REQUEST_TIMEOUT)
+    try:
+        payload = {
+            "content": IP,
+            "ttl": 120,  # 非 auto(1) 的 ttl, 需要设置 proxied 为 False
+            "proxied": False,
+        }
+        conn.request("PATCH", f"/client/v4/zones/{CF_Zone_ID}/dns_records/{identifier}", json.dumps(payload), CF_Headers)
+        res = conn.getresponse()
+        data = res.read()
+        return json.loads(data.decode("utf-8"))
+    finally:
+        conn.close()
 
 
 def get_my_global_ip():
     query_sites = ["http://myip.ipip.net", "http://ipv4.icanhazip.com/", "http://ip.42.pl/raw"]
+    result = None
     for site in query_sites:
         try:
-            result = requests.get(site, timeout=15)
+            result = requests.get(site, timeout=REQUEST_TIMEOUT)
             break
-        except:
+        except requests.RequestException:
             continue
-    if result.status_code == 200:
-        ip = re.findall( r'[0-9]+(?:\.[0-9]+){3}', result.text)
-        return ip[0]
-    else:
-        return "0.0.0.0"
+    if result is not None and result.status_code == 200:
+        ip = re.findall(r'[0-9]+(?:\.[0-9]+){3}', result.text)
+        if ip:
+            return ip[0]
+    return "0.0.0.0"
 
 
 def initlog():
