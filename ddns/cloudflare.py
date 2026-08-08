@@ -15,14 +15,12 @@ exclude_ips = 6.6.6.6
 """
 
 import datetime
-import http.client
 import requests
-import json
 import sys
 import os
 import re
+import traceback
 from configparser import ConfigParser
-from urllib.parse import quote
 
 CONFIG_PATH = os.path.join(os.path.dirname(__file__), "cloudflare.ini")
 
@@ -52,69 +50,59 @@ CF_Record_Name = _cfg['record_name']
 # 需要排除的IP
 Exclude_IPs = _cfg['exclude_ips']
 
-CF_Headers = {
-    'Authorization': 'Bearer ' + _cfg['token'],
-}
+CF_API_BASE = "https://api.cloudflare.com/client/v4"
 
 # 网络请求超时时间(秒)，避免网络异常时脚本无限期卡死
 REQUEST_TIMEOUT = 15
 
+# 复用同一个 Session(及其底层连接)，减少重复的 TCP/TLS 握手
+_session = requests.Session()
+_session.headers.update({'Authorization': 'Bearer ' + _cfg['token']})
+
 
 def dns_list():
-    conn = http.client.HTTPSConnection("api.cloudflare.com", timeout=REQUEST_TIMEOUT)
-    try:
-        conn.request("GET", f"/client/v4/zones/{CF_Zone_ID}/dns_records", headers=CF_Headers)
-        res = conn.getresponse()
-        data = res.read()
-        return json.loads(data.decode("utf-8"))
-    finally:
-        conn.close()
+    resp = _session.get(f"{CF_API_BASE}/zones/{CF_Zone_ID}/dns_records", timeout=REQUEST_TIMEOUT)
+    return resp.json()
 
 
 # identifier: record id
 def dns_detail(record_name):
-    conn = http.client.HTTPSConnection("api.cloudflare.com", timeout=REQUEST_TIMEOUT)
-    try:
-        conn.request("GET", f"/client/v4/zones/{CF_Zone_ID}/dns_records?name.exact={quote(record_name)}", headers=CF_Headers)
-        res = conn.getresponse()
-        data = res.read()
-        return json.loads(data.decode("utf-8"))
-    finally:
-        conn.close()
+    resp = _session.get(
+        f"{CF_API_BASE}/zones/{CF_Zone_ID}/dns_records",
+        params={"name.exact": record_name},
+        timeout=REQUEST_TIMEOUT,
+    )
+    return resp.json()
 
 
 # identifier: record id
 def dns_update(identifier, name, IP):
-    conn = http.client.HTTPSConnection("api.cloudflare.com", timeout=REQUEST_TIMEOUT)
-    try:
-        payload = {
-            "type": "A",
-            "name": name,
-            "content": IP,
-            "ttl": 1,
-        }
-        conn.request("PUT", f"/client/v4/zones/{CF_Zone_ID}/dns_records/{identifier}", json.dumps(payload), CF_Headers)
-        res = conn.getresponse()
-        data = res.read()
-        return json.loads(data.decode("utf-8"))
-    finally:
-        conn.close()
+    payload = {
+        "type": "A",
+        "name": name,
+        "content": IP,
+        "ttl": 1,
+    }
+    resp = _session.put(
+        f"{CF_API_BASE}/zones/{CF_Zone_ID}/dns_records/{identifier}",
+        json=payload,
+        timeout=REQUEST_TIMEOUT,
+    )
+    return resp.json()
 
 
 def dns_patch(identifier, IP):
-    conn = http.client.HTTPSConnection("api.cloudflare.com", timeout=REQUEST_TIMEOUT)
-    try:
-        payload = {
-            "content": IP,
-            "ttl": 120,  # 非 auto(1) 的 ttl, 需要设置 proxied 为 False
-            "proxied": False,
-        }
-        conn.request("PATCH", f"/client/v4/zones/{CF_Zone_ID}/dns_records/{identifier}", json.dumps(payload), CF_Headers)
-        res = conn.getresponse()
-        data = res.read()
-        return json.loads(data.decode("utf-8"))
-    finally:
-        conn.close()
+    payload = {
+        "content": IP,
+        "ttl": 120,  # 非 auto(1) 的 ttl, 需要设置 proxied 为 False
+        "proxied": False,
+    }
+    resp = _session.patch(
+        f"{CF_API_BASE}/zones/{CF_Zone_ID}/dns_records/{identifier}",
+        json=payload,
+        timeout=REQUEST_TIMEOUT,
+    )
+    return resp.json()
 
 
 def get_my_global_ip():
@@ -158,34 +146,39 @@ def main():
 
     initlog()
 
-    my_ip = get_my_global_ip()
-    if my_ip == "0.0.0.0" or my_ip in Exclude_IPs:
-        log("ERROR", "获取本机公网IP失败或命中排除列表")
-        return
+    try:
+        my_ip = get_my_global_ip()
+        if my_ip == "0.0.0.0" or my_ip in Exclude_IPs:
+            log("ERROR", "获取本机公网IP失败或命中排除列表")
+            return
 
-    # 测试: 获取DNS记录列表
-    # all_records = dns_list()
-    # print(all_records)
+        # 测试: 获取DNS记录列表
+        # all_records = dns_list()
+        # print(all_records)
 
-    detail = dns_detail(CF_Record_Name)
-    if not detail['success']:
-        log("ERROR", f"查询DNS记录失败: {cf_error_message(detail)}")
-        return
+        detail = dns_detail(CF_Record_Name)
+        if not detail['success']:
+            log("ERROR", f"查询DNS记录失败: {cf_error_message(detail)}")
+            return
 
-    result = detail["result"][0]
-    current_cf_ip = result['content']
-    record_id = result['id']
+        result = detail["result"][0]
+        current_cf_ip = result['content']
+        record_id = result['id']
 
-    if current_cf_ip == my_ip:
-        log("OK", f"IP未变化 ({my_ip})，无需更新")
-        return
+        if current_cf_ip == my_ip:
+            log("OK", f"IP未变化 ({my_ip})，无需更新")
+            return
 
-    resp = dns_update(record_id, CF_Record_Name, my_ip)
-    if not resp['success']:
-        log("ERROR", f"更新DNS记录失败 ({current_cf_ip} → {my_ip}): {cf_error_message(resp)}")
-        return
+        resp = dns_update(record_id, CF_Record_Name, my_ip)
+        if not resp['success']:
+            log("ERROR", f"更新DNS记录失败 ({current_cf_ip} → {my_ip}): {cf_error_message(resp)}")
+            return
 
-    log("OK", f"IP已更新: {current_cf_ip} → {my_ip}")
+        log("OK", f"IP已更新: {current_cf_ip} → {my_ip}")
+    except requests.RequestException as e:
+        log("ERROR", f"网络请求异常: {e}")
+    except Exception:
+        log("ERROR", f"未预期的异常:\n{traceback.format_exc()}")
 
 
 if __name__ == '__main__':
